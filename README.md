@@ -6,5 +6,5 @@
 
 ## Debug 測試畫面
 
-<img src="https://i.imgur.com/8dbPAZ3.png" />
+<img src="https://i.imgur.com/atALXXK.png" />
 
