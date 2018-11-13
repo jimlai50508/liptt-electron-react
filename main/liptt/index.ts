@@ -1,1 +1,0 @@
-export { LiPTT } from "./liptt"
