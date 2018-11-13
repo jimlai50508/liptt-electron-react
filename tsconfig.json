@@ -1,0 +1,25 @@
+{
+    "extends": "./.config/tsconfig.base",
+    "compilerOptions": {
+        "jsx": "react",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "target": "es6",
+        "lib": ["es6", "dom"],
+        "types": [
+        ],
+        "paths": {
+            "renderer/*":   ["./renderer/*"],
+            "assets/*":     ["./renderer/assets/*"],
+            "components/*": ["./renderer/App/components/*"],
+            "model":        ["./main/model"],
+            "terminal":     ["./main/model/terminal"],
+        },
+        "baseUrl": "./"
+    },
+    "compileOnSave": false,
+    "exclude": [
+        "node_modules",
+        "main"
+    ]
+}
