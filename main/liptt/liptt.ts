@@ -10,6 +10,10 @@ export class LiPTT extends Client {
     private readonly bracketReg = /[\u005b\u003c\uff3b\u300a]{1}[^\u005b\u003c\uff3b\u300a\u005d\u003e\uff3d\u300b]+[\u005d\u003e\uff3d\u300b]{1}/
     /** "()" */
     private readonly boundReg = /[\u0028]{1}[^\u0028\u0029]+[\u0029]{1}/
+    private readonly titleRegex = /標題  (Re:|Fw:|)\s*(\[[^\[^\]]*\]|)\s*([\S\s]*)/
+    private readonly timeRegex = /時間  ([A-Z][a-z]+) ([A-Z][a-z]+)\s*(\d+)\s*(\d+:\d+:\d+)\s*(\d+)/
+    private readonly authorRegex = /作者  ([A-Za-z0-9]+) \(([\S\s^\(^\)]*)\)\s*(?:看板  )?([A-Za-z0-9\-\_]+)?/
+    private readonly afootRegex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
     private scst: SocketState
     private curIndex: number
     private board: string
@@ -332,7 +336,7 @@ export class LiPTT extends Client {
             if (h.hasHeader === true) {
                 h.url = a.url
                 h.coin = a.coin
-                const group0 = /作者  ([A-Za-z0-9]+) \(([\S\s^\(^\)]*)\)\s*(?:看板  )?([A-Za-z0-9\-\_]+)?/.exec(t.GetString(0))
+                const group0 = this.authorRegex.exec(t.GetString(0))
                 if (group0) {
                     const g = group0.slice(1)
                     if (g[0]) {
@@ -343,7 +347,7 @@ export class LiPTT extends Client {
                     }
                     h.board = g[2] ? g[2].toString() : a.board
                 }
-                const group1 = /標題  (Re:|Fw:|)\s*(\[[^\[^\]]*\]|)\s*([\S\s]*)/.exec(t.GetString(1))
+                const group1 = this.titleRegex.exec(t.GetString(1))
                 if (group1) {
                     const g = group1.slice(1)
                     if (g[0]) {
@@ -362,7 +366,7 @@ export class LiPTT extends Client {
                         h.title = g[2].toString().trim()
                     }
                 }
-                const group2 = /時間  ([A-Z][a-z]+) ([A-Z][a-z]+)\s*(\d+)\s*(\d+:\d+:\d+)\s*(\d+)/.exec(t.GetString(2))
+                const group2 = this.timeRegex.exec(t.GetString(2))
                 if (group2) {
                     const g = group2.slice(1)
                     h.date = g.reduce((ans, cur) => ans + " " + cur)
@@ -473,16 +477,68 @@ export class LiPTT extends Client {
 
         const match = regex.exec(t.GetString(23))
         if (match) {
-            const i = this.intersectPrev(prev, t)
-            Debug.warn(i, match[2])
-            if (i > 0) {
+            let i = this.intersectPrev(prev, t)
+            if (i === TerminalHeight) {
+                const c0 = this.authorRegex.test(t.GetString(0))
+                const c1 = this.titleRegex.test(t.GetString(1))
+                const c2 = this.timeRegex.test(t.GetString(2))
+                const c3 = t.GetString(3).startsWith("───────────────────────────────────────")
+                i = c0 ? i - 1 : i
+                i = c1 ? i - 1 : i
+                i = c2 ? i - 1 : i
+                i = c3 ? i - 1 : i
                 const tmp = t.DeepCopy()
+                Debug.warn("addlines: ", i, match[2], "%")
+                lines.push(...tmp.Content.slice(TerminalHeight - i, TerminalHeight - 1))
+            } else if (i > 0) {
+                const prevm = regex.exec(prev.GetString(23))
+                if (prevm) {
+                    const pi = parseInt(prevm[3], 10)
+                    const pj = parseInt(prevm[4], 10)
+                    const mi = parseInt(match[3], 10)
+                    const mj = parseInt(match[4], 10)
+                    const predict = Math.max(mi - pi, mj - pj)
+                    i = Math.max(i, predict)
+                }
+                const tmp = t.DeepCopy()
+                Debug.warn("addlines: ", i, match[2], "%")
                 lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
             }
             return lines
         } else {
             return []
         }
+    }
+
+    /** 判斷相交的偏移量 */
+    private intersectPrev(prev: Terminal, next: Terminal): number {
+        function equalLine(p: Block[], q: Block[]) {
+            if (p.length !== q.length) {
+                return false
+            }
+            for (let i = 0; i < p.length; i++) {
+                if (!p[i].Equal(q[i])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        function intersect(pr: Terminal, ne: Terminal, offset: number): boolean {
+            for (let k = offset; k < TerminalHeight - 1; k++) {
+                if (!equalLine(pr.Content[k], ne.Content[k - offset])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        for (let i = 0; i < TerminalHeight - 1; i++) {
+            if (intersect(prev, next, i)) {
+                return i
+            }
+        }
+        return TerminalHeight // 不相交
     }
 
     private async getCurrentArticleAbstract(term: Terminal): Promise<ArticleAbstract[]> {
@@ -691,37 +747,6 @@ export class LiPTT extends Client {
             }
         }
         return [aid, url, coin]
-    }
-
-    /** 判斷相交的偏移量 */
-    private intersectPrev(prev: Terminal, next: Terminal): number {
-        function equalLine(p: Block[], q: Block[]) {
-            if (p.length !== q.length) {
-                return false
-            }
-            for (let i = 0; i < p.length; i++) {
-                if (!p[i].Equal(q[i])) {
-                    return false
-                }
-            }
-            return true
-        }
-
-        function intersect(pr: Terminal, ne: Terminal, offset: number): boolean {
-            for (let k = offset; k < TerminalHeight - 1; k++) {
-                if (!equalLine(pr.Content[k], ne.Content[TerminalHeight - 2 - k])) {
-                    return false
-                }
-            }
-            return true
-        }
-
-        for (let i = 0; i < TerminalHeight - 1; i++) {
-            if (intersect(prev, next, i)) {
-                return i
-            }
-        }
-        return TerminalHeight - 1 // 不相交
     }
 
     public async left(): Promise<void> {

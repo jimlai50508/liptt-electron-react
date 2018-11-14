@@ -121,6 +121,10 @@ export function StateString(s: PTTState): string {
     }
 }
 
+const articleFootReg = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
+let flag: object
+let prevMatch: RegExpExecArray
+
 export function StateFilter(t: Terminal) {
     const line22 = t.GetString(22)
     const line23 = t.GetString(23)
@@ -134,7 +138,20 @@ export function StateFilter(t: Terminal) {
         return PTTState.Log
     } else if (line23.includes("您覺得這篇文章")) {
         return PTTState.Comment
-    } else if (/瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)/.test(line23)) {
+    } else if (articleFootReg.test(line23)) {
+        if (flag) {
+            const match = articleFootReg.exec(line23)
+            if (match) {
+                if (match[3] === prevMatch[3]) {
+                    return PTTState.WhereAmI
+                } else {
+                    prevMatch = match
+                }
+            }
+        } else {
+            flag = {}
+            prevMatch = articleFootReg.exec(line23)
+        }
         return PTTState.Article
     } else if (line22.includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
@@ -170,6 +187,7 @@ export function StateFilter(t: Terminal) {
             return PTTState.WhereAmI
         }
     } else if (testBoard(t.GetString(0), t.GetString(23))) {
+        flag = undefined
         return PTTState.Board
     } else if (t.GetString(2) === "   編號   看  板       類別   中   文   敘   述               人氣 板   主      ") {
         return PTTState.Favorite
