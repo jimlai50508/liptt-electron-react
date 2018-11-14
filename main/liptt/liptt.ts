@@ -38,11 +38,11 @@ export class LiPTT extends Client {
 
     private onUpdated(term: Terminal) {
         const stat = StateFilter(term)
-        this.snapshot = term.DeepCopy()
-        this.snapshotStat = stat
         if (stat === PTTState.WhereAmI) {
             return
         }
+        this.snapshot = term.DeepCopy()
+        this.snapshotStat = stat
         this.emit("StateUpdated", term, stat)
     }
 
@@ -421,7 +421,14 @@ export class LiPTT extends Client {
 
         while (this.snapshotStat !== PTTState.Article || h.aid !== this.curArticle.aid) {
             pagedown = false
-            if (this.snapshotStat === PTTState.Board) {
+            if (this.snapshotStat === PTTState.MainPage) {
+                if (!h.board) {
+                    return []
+                }
+                if (!await this.enterBoard(h.board)) {
+                    return []
+                }
+            } else if (this.snapshotStat === PTTState.Board) {
                 [t, s] = await this.Send(h.aid, 0x0D, 0x72)
                 if (s !== PTTState.Article) {
                     this.curArticle = null
