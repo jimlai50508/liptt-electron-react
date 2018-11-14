@@ -7,7 +7,7 @@
         "target": "esnext",
     },
     "include": [
-        "./**/*",
+        "../main/**/*",
     ],
     "exclude": [
         "../node_modules"
