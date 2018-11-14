@@ -1,8 +1,7 @@
 import { Client, Control, SocketState } from "../client"
 import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader } from "../model"
-import { Terminal, Block } from "../model/terminal"
+import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { PTTState, StateFilter } from "./state"
-import Semaphore from "semaphore-async-await"
 import { Debug } from "../app"
 
 export class LiPTT extends Client {
@@ -11,13 +10,13 @@ export class LiPTT extends Client {
     private readonly bracketReg = /[\u005b\u003c\uff3b\u300a]{1}[^\u005b\u003c\uff3b\u300a\u005d\u003e\uff3d\u300b]+[\u005d\u003e\uff3d\u300b]{1}/
     /** "()" */
     private readonly boundReg = /[\u0028]{1}[^\u0028\u0029]+[\u0029]{1}/
-    private stat: PTTState
     private scst: SocketState
     private curIndex: number
     private board: string
     private curArticle: ArticleHeader
+    private curArticleEnd: boolean
     private snapshot: Terminal
-
+    private snapshotStat: PTTState
     constructor() {
         super()
         this.sub()
@@ -36,6 +35,7 @@ export class LiPTT extends Client {
     private onUpdated(term: Terminal) {
         const stat = StateFilter(term)
         this.snapshot = term.DeepCopy()
+        this.snapshotStat = stat
         if (stat === PTTState.WhereAmI) {
             return
         }
@@ -43,12 +43,12 @@ export class LiPTT extends Client {
     }
 
     private onStateUpdated(term: Terminal, stat: PTTState) {
-        this.stat = stat
-        if (this.stat === PTTState.MainPage) {
+        this.snapshotStat = stat
+        if (this.snapshotStat === PTTState.MainPage) {
             this.curIndex = Number.MAX_SAFE_INTEGER
         }
 
-        // Debug.log(StateString(this.stat))
+        // Debug.log(StateString(this.snapshotState))
         // for (let i = 0; i < 24; i++) {
         //     Debug.log(term.GetString(i))
         // }
@@ -70,8 +70,8 @@ export class LiPTT extends Client {
             return new Promise<PTTState>((resolve) => {resolve(PTTState.None)})
         }
 
-        while (this.stat !== PTTState.Username) {
-            if (this.stat === PTTState.Overloading) {
+        while (this.snapshotStat !== PTTState.Username) {
+            if (this.snapshotStat === PTTState.Overloading) {
                 return PTTState.Overloading
             }
             await this.WaitForNext()
@@ -126,7 +126,7 @@ export class LiPTT extends Client {
 
     public async getFavorite(): Promise<FavoriteItem[]> {
 
-        if (this.stat !== PTTState.MainPage) {
+        if (this.snapshotStat !== PTTState.MainPage) {
             let [, s] = await this.Send(Control.Left())
             while (s !== PTTState.MainPage) {
                 [, s] = await this.Send(Control.Left())
@@ -254,7 +254,7 @@ export class LiPTT extends Client {
         let t: Terminal
         let s: PTTState
 
-        if (this.stat !== PTTState.MainPage) {
+        if (this.snapshotStat !== PTTState.MainPage) {
             [t, s] = await this.Send(Control.Left())
             while (s !== PTTState.MainPage) {
                 [t, s] = await this.Send(Control.Left())
@@ -286,9 +286,9 @@ export class LiPTT extends Client {
     }
 
     public async getMoreArticleAbstract(): Promise<ArticleAbstract[]> {
-        if (this.stat === PTTState.Article) {
+        if (this.snapshotStat === PTTState.Article) {
             await this.Send(Control.Left())
-        } else if (this.stat !== PTTState.Board) {
+        } else if (this.snapshotStat !== PTTState.Board) {
             return []
         }
         if (this.curIndex === Number.MAX_SAFE_INTEGER) {
@@ -311,13 +311,20 @@ export class LiPTT extends Client {
             deleted: false,
         }
 
+        let t: Terminal = this.snapshot
+        let s: PTTState = this.snapshotStat
+
         const match = /^#[A-Za-z0-9_\-]{8}$/.exec(a.aid)
         if (!match) {
             h.deleted = true
             return h
         }
 
-        const [t, s] = await this.Send(a.aid, 0x0D, 0x72)
+        if (s !== PTTState.Board) {
+            return {}
+        }
+
+        [t, s] = await this.Send(a.aid, 0x0D, 0x72)
         if (s === PTTState.Article) {
             if (t.GetString(3).startsWith("───────────────────────────────────────")) {
                 h.hasHeader = true
@@ -381,39 +388,45 @@ export class LiPTT extends Client {
     //     return true
     // }
 
-    public async left(): Promise<void> {
-        await this.Send(Control.Left())
-    }
-
     public async getMoreArticleContent(h: ArticleHeader): Promise<Block[][]> {
 
         if (!h.aid || !h.board) {
+            this.curArticle = null
+            this.curArticleEnd = false
             return []
         }
 
         if (!/^#[A-Za-z0-9_\-]{8}$/.test(h.aid)) {
+            this.curArticle = null
+            this.curArticleEnd = false
             return []
         }
+
+        const reset: boolean = this.curArticle ? false : true
 
         if (!this.curArticle) {
             this.curArticle = {...h}
         }
 
+        const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
         const lines: Block[][] = []
-        let t: Terminal
-        let s: PTTState
-        let down = true
+        let t: Terminal = this.snapshot
+        const prev = t.DeepCopy()
+        let s: PTTState = this.snapshotStat
+        let pagedown = true
 
-        while (this.stat !== PTTState.Article || h.aid !== this.curArticle.aid) {
-            down = false
-            if (this.stat === PTTState.Board) {
+        while (this.snapshotStat !== PTTState.Article || h.aid !== this.curArticle.aid) {
+            pagedown = false
+            if (this.snapshotStat === PTTState.Board) {
                 [t, s] = await this.Send(h.aid, 0x0D, 0x72)
                 if (s !== PTTState.Article) {
+                    this.curArticle = null
+                    this.curArticleEnd = false
                     return []
                 }
                 this.curArticle = {...h}
                 break
-            } else if (this.stat === PTTState.Article) {
+            } else if (this.snapshotStat === PTTState.Article) {
                 if (h.aid !== this.curArticle.aid) {
                     await this.Send(Control.Left())
                     await this.Send(Control.Left())
@@ -425,22 +438,50 @@ export class LiPTT extends Client {
             }
         }
 
-        if (down) {
+        function endTest(term: Terminal): boolean {
+            const txt = term.GetString(23)
+            const m = regex.exec(txt)
+            if (m) {
+                if (m[2] === "100") {
+                    return true
+                }
+            }
+            return false
+        }
+
+        function beginTest(term: Terminal): boolean {
+            const txt = term.GetString(23)
+            const m = regex.exec(txt)
+            if (m) {
+                if (parseInt(m[3], 10) === 1) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        if (reset) {
+            if (!beginTest(t)) {
+                [t, s] = await this.Send(Control.Home())
+            }
+        } else if (pagedown) {
+            if (endTest(t)) {
+                return []
+            }
             [t, s] = await this.Send(Control.PageDown())
         }
 
-        const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)/
-
-        const txt = t.GetString(23)
-
-        const match = regex.exec(txt)
+        const match = regex.exec(t.GetString(23))
         if (match) {
-            const result = match.slice(1)
-
-            Debug.warn(result[0], result[1])
+            const i = this.intersectPrev(prev, t)
+            Debug.warn(i, match[2])
+            if (i > 0) {
+                const tmp = t.DeepCopy()
+                lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
+            }
             return lines
         } else {
-            return lines
+            return []
         }
     }
 
@@ -565,6 +606,7 @@ export class LiPTT extends Client {
                 key: index,
                 date: dateStr,
                 like,
+                author,
                 state,
                 deleted,
                 type,
@@ -651,10 +693,45 @@ export class LiPTT extends Client {
         return [aid, url, coin]
     }
 
+    /** 判斷相交的偏移量 */
+    private intersectPrev(prev: Terminal, next: Terminal): number {
+        function equalLine(p: Block[], q: Block[]) {
+            if (p.length !== q.length) {
+                return false
+            }
+            for (let i = 0; i < p.length; i++) {
+                if (!p[i].Equal(q[i])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        function intersect(pr: Terminal, ne: Terminal, offset: number): boolean {
+            for (let k = offset; k < TerminalHeight - 1; k++) {
+                if (!equalLine(pr.Content[k], ne.Content[TerminalHeight - 2 - k])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        for (let i = 0; i < TerminalHeight - 1; i++) {
+            if (intersect(prev, next, i)) {
+                return i
+            }
+        }
+        return TerminalHeight - 1 // 不相交
+    }
+
+    public async left(): Promise<void> {
+        await this.Send(Control.Left())
+    }
+
     private WaitForNext(): Promise<[Terminal, PTTState]> {
         return new Promise((resolve) => {
             this.once("StateUpdated", (term: Terminal, stat: PTTState) => {
-                resolve([term, stat])
+                resolve([term.DeepCopy(), stat])
             })
         })
     }
@@ -662,7 +739,7 @@ export class LiPTT extends Client {
     private Send(data: Buffer | Uint8Array | string | number, ...optionalParams: any[]): Promise<[Terminal, PTTState]> {
         return new Promise((resolve) => {
             this.once("StateUpdated", (term: Terminal, stat: PTTState) => {
-                resolve([term, stat])
+                resolve([term.DeepCopy(), stat])
             })
             this.send(data, optionalParams)
         })
@@ -681,6 +758,6 @@ export class LiPTT extends Client {
     }
 
     public getState() {
-        return this.stat
+        return this.snapshotStat
     }
 }

@@ -29,4 +29,12 @@ export class Block {
         this.Foreground = b.Foreground
         this.Attribute = b.Attribute
     }
+
+    /** 判斷相等 */
+    public Equal(b: Block) {
+        return (this.Content === b.Content)
+        // && (this.Attribute === b.Attribute)
+        // && (this.Background === b.Background)
+        // && (this.Foreground === b.Foreground)
+    }
 }

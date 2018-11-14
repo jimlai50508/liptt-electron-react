@@ -21,6 +21,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
 
     private lock: Semaphore
     private umount: boolean
+    private prevab: ArticleAbstract
 
     private starKey: number = -1
     private ih: number = 30
@@ -64,6 +65,14 @@ export class Test extends Component<ComponentProps, ComponentState> {
         >
             <div className={style.myDiv}>
                 <Button onClick={async () => {
+
+                    if (this.prevab !== item) {
+                        if (this.prevab && !this.prevab.deleted) {
+                            await PromiseIpcRenderer.send<void>("/left")
+                        }
+                        this.prevab = item
+                    }
+
                     const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
                     if (info.deleted) {
                         return
@@ -71,12 +80,8 @@ export class Test extends Component<ComponentProps, ComponentState> {
 
                     const lines = await PromiseIpcRenderer.send<Block[][]>("/article/get-more", item)
 
-                    if (!lines[0]) {
-                        return
-                    }
-                    await PromiseIpcRenderer.send<boolean>("/left")
                 }}>
-                    <span>{item.key} {item.type} {item.category} {item.title}</span>
+                    <span>{item.key} {item.aid} {item.type} {item.author} {item.category} {item.title}</span>
                 </Button>
             </div>
         </Row>))

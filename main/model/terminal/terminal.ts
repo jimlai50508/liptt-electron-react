@@ -2,8 +2,8 @@ import { Big5UAO } from "../../encoding"
 import { Block } from "./block"
 import { Attribute, ForeColor, BackColor } from "./color"
 
-const TerminalWidth = 80
-const TerminalHeight = 24
+export const TerminalWidth = 80
+export const TerminalHeight = 24
 
 /** PTT的傳統Terminal畫面 */
 export class Terminal {
@@ -39,6 +39,10 @@ export class Terminal {
                 this.content[i][j] = new Block()
             }
         }
+    }
+
+    get Content(): Block[][] {
+        return this.content
     }
 
     /** 清除 */

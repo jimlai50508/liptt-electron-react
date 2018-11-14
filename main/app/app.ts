@@ -200,16 +200,18 @@ export class App {
         })
 
         ipcMain.on("/login", async (_: EventEmitter, user: User) => {
+            await lock.wait()
             if (user.username) {
                 const s = await this.client.login(user.username, user.password)
                 if (s === PTTState.MainPage) {
                     this.mainWindow.webContents.send("/login", true)
-                } else {
-                    this.mainWindow.webContents.send("/login", false)
+                    lock.signal()
+                    return
                 }
-            } else {
-                this.mainWindow.webContents.send("/login", false)
             }
+            Debug.error("login error")
+            this.mainWindow.webContents.send("/login", false)
+            lock.signal()
         })
 
         ipcMain.on("/favor", async (_: EventEmitter) => {
@@ -243,11 +245,6 @@ export class App {
         /// 取得文章資訊
         ipcMain.on("/board/article-header", async (_: EventEmitter, ab: ArticleAbstract) => {
             await lock.wait()
-            if (this.client.getState() !== PTTState.Board) {
-                this.mainWindow.webContents.send("/board/article-header", {})
-                lock.signal()
-                return
-            }
             const info = await this.client.getArticleInfoWithAbs(ab)
             this.mainWindow.webContents.send("/board/article-header", info)
             lock.signal()
