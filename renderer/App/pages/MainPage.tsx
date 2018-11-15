@@ -12,6 +12,7 @@ import { Favorite } from "./Favorite"
 
 import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
+import QueueAnim from "rc-queue-anim"
 
 interface ComponentProps {
 
@@ -21,6 +22,7 @@ interface ComponentState {
     logout: boolean
     activeMenu: string
     collapsed: boolean
+    show: boolean
 }
 
 export class MainPage extends Component<ComponentProps, ComponentState> {
@@ -33,7 +35,10 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
     @autobind
     private onMenuClick(param: ClickParam) {
         if (param.key !== this.state.activeMenu) {
-            this.setState({...this.state, activeMenu: param.key})
+            this.setState((prev, _) => ({...prev, show: false}))
+            setTimeout(() => {
+                this.setState((prev, _) => ({...prev, show: true, activeMenu: param.key}))
+            }, 1000)
         }
     }
 
@@ -49,6 +54,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             logout: false,
             activeMenu: "",
             collapsed: false,
+            show: false,
         }
     }
 
@@ -61,11 +67,13 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             case "Home":
                 return <LegacyTerminal />
             default:
-            return <Favorite/>
+            return <Favorite />
         }
     }
 
     public componentDidMount() {
+        this.setState((prev, _) => ({...prev, show: true}))
+
         // notification.config({placement: "bottomRight"})
         // setTimeout(() => {
         //     notification.info({message: "hello world", description: "hello hello world world"})
@@ -111,7 +119,11 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                             </Col>
                         </Row>
                     </Layout.Header>
-                    <Layout.Content className={style.container}>{this.renderContent()}</Layout.Content>
+                    <Layout.Content className={style.container}>
+                        <QueueAnim>
+                            {this.state.show ? this.renderContent() : null}
+                        </QueueAnim>
+                    </Layout.Content>
                     {/* <Layout.Footer className={style.footer}>
                         Created by lightyen <span>React:{React.version} Ant-design:{antdVersion}</span>
                     </Layout.Footer> */}

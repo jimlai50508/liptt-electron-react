@@ -490,3 +490,12 @@ export class Terminal {
         return s
     }
 }
+
+/** Block[] 轉字串 */
+export function toString(s: Block[]): string {
+    const msg = new Uint8Array(s.length)
+    for (let j = 0; j < TerminalWidth; j++) {
+        msg[j] = s[j].Content
+    }
+    return Big5UAO.GetString(msg)
+}

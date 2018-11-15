@@ -13,13 +13,19 @@
             "assets/*":     ["./renderer/assets/*"],
             "components/*": ["./renderer/App/components/*"],
             "model":        ["./main/model"],
+            "encoding":     ["./main/encoding"],
             "terminal":     ["./main/model/terminal"],
         },
         "baseUrl": "./"
     },
     "compileOnSave": false,
+    "include": [
+        "renderer/**/*"
+    ],
     "exclude": [
         "node_modules",
+        "dist",
+        "renderer/**/*.d.ts",
         "main"
     ]
 }

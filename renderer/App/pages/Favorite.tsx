@@ -55,7 +55,7 @@ export class Favorite extends Component<ComponentProps, ComponentState> {
 
     public render() {
         return (
-            <Table {...this.state} columns={columns} dataSource={this.state.data}/>
+            <Table {...this.state} columns={columns} dataSource={this.state.data} style={{clear: "both"}}/>
         )
     }
 }

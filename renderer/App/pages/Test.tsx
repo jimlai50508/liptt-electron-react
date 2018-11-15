@@ -5,7 +5,7 @@ import { ScrollView } from "../components/ScrollView/ScrollView"
 import { Row, Button } from "antd"
 import Semaphore from "semaphore-async-await"
 import { ArticleAbstract, ArticleHeader, PromiseIpcRenderer } from "model"
-import { Block } from "terminal"
+import { Block, toString } from "terminal"
 import * as style from "./Test.scss"
 
 interface ComponentProps {
@@ -79,7 +79,9 @@ export class Test extends Component<ComponentProps, ComponentState> {
                     }
 
                     const lines = await PromiseIpcRenderer.send<Block[][]>("/article/get-more", item)
-
+                    lines.forEach((s) => {
+                        console.log(toString(s))
+                    })
                 }}>
                     <span>{item.key} {item.aid} {item.type} {item.author} {item.category} {item.title}</span>
                 </Button>
