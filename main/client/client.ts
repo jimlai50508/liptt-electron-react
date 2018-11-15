@@ -33,7 +33,7 @@ export class Client extends EventEmitter {
     }
 
     /** 開始連線 */
-    public connect(): Promise<SocketState> {
+    public async connect(): Promise<SocketState> {
         return new Promise<SocketState>((resolve, reject) => {
             if (this.security) {
                 const ws = new WebSocket("wss://ws.ptt.cc/bbs", {
@@ -54,11 +54,14 @@ export class Client extends EventEmitter {
                     ws.onmessage = (e) => {
                         this.read(e.data as Buffer)
                     }
+                    ws.on("error", () => {
+                        resolve(SocketState.Failed)
+                    })
                 } else {
-                    reject(SocketState.Failed)
+                    resolve(SocketState.Failed)
                 }
             } else {
-                reject(SocketState.Failed)
+                resolve(SocketState.Failed)
             }
         })
     }

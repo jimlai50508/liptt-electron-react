@@ -17,7 +17,7 @@ import MainWindow from "./mainWindow"
 import { isDevMode, Debug } from "./util"
 import * as JSONPackage from "../../../package.json"
 import { LiPTT } from "../liptt"
-import { PTTState } from "../liptt/state"
+import { PTTState } from "../model/state"
 import { User, FavoriteItem, ArticleAbstract, ArticleHeader } from "../model"
 
 export class App {
@@ -201,16 +201,12 @@ export class App {
 
         ipcMain.on("/login", async (_: EventEmitter, user: User) => {
             await lock.wait()
-            if (user.username) {
+            if (user.username && user.password) {
                 const s = await this.client.login(user.username, user.password)
-                if (s === PTTState.MainPage) {
-                    this.mainWindow.webContents.send("/login", true)
-                    lock.signal()
-                    return
-                }
+                this.mainWindow.webContents.send("/login", s)
+            } else {
+                this.mainWindow.webContents.send("/login", PTTState.WrongPassword)
             }
-            Debug.error("login error")
-            this.mainWindow.webContents.send("/login", false)
             lock.signal()
         })
 

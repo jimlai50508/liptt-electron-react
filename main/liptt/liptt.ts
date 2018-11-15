@@ -1,7 +1,7 @@
 import { Client, Control, SocketState } from "../client"
 import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader } from "../model"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
-import { PTTState, StateFilter } from "./state"
+import { PTTState, StateFilter } from "../model/state"
 import { Debug } from "../app"
 
 export class LiPTT extends Client {
@@ -69,16 +69,51 @@ export class LiPTT extends Client {
 
     /** 建立連線, 然後登入 */
     public async login(user: string, pass: string): Promise<PTTState> {
-        const stat = await this.connect()
-        if (stat !== SocketState.Connected) {
-            return new Promise<PTTState>((resolve) => {resolve(PTTState.None)})
+        const result = await this.connect()
+        if (result !== SocketState.Connected) {
+            switch (result) {
+            case SocketState.Failed:
+                return PTTState.WebSocketFailed
+            case SocketState.Closed:
+                return PTTState.WebSocketClosed
+            default:
+                return PTTState.None
+            }
         }
 
-        while (this.snapshotStat !== PTTState.Username) {
-            if (this.snapshotStat === PTTState.Overloading) {
-                return PTTState.Overloading
+        const waitState = () => new Promise<PTTState>(resolve => {
+            let c = 0
+            const id = setInterval(() => {
+                c++
+                switch (this.snapshotStat) {
+                case PTTState.Username:
+                    clearInterval(id)
+                    resolve(this.snapshotStat)
+                    break
+                case PTTState.Overloading:
+                    clearInterval(id)
+                    resolve(this.snapshotStat)
+                    break
+                default:
+                    if (c > 30) {
+                        clearInterval(id)
+                        resolve(PTTState.Timeout)
+                    } else {
+                        resolve(this.snapshotStat)
+                    }
+                    break
+                }
+            }, 100)
+        })
+
+        let s = await waitState()
+        while (s !== PTTState.Username) {
+            if (s === PTTState.Overloading) {
+                return s
+            } else if (s === PTTState.Timeout) {
+                return s
             }
-            await this.WaitForNext()
+            s = await waitState()
         }
 
         return this.Login(user, pass)

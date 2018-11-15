@@ -1,6 +1,4 @@
-import { Terminal } from "../model/terminal"
-// import { Big5UAO } from "../client/encoding"
-// import { Debug } from "../app"
+import { Terminal } from "./terminal"
 
 /** PTT的畫面狀態 */
 export enum PTTState {
@@ -60,64 +58,80 @@ export enum PTTState {
     AIDNotFound,
     /** 未定義的狀態 */
     WhereAmI,
+    /** 已連線 */
+    Connected,
+    /** websocket 連線失敗 */
+    WebSocketFailed,
+    /** websocket 連線關閉 */
+    WebSocketClosed,
+    /** 連線逾時 */
+    Timeout,
 }
 
 export function StateString(s: PTTState): string {
     switch (s) {
     case PTTState.None:
-        return "[完全沒有畫面]"
+        return "完全沒有畫面"
     case PTTState.Username:
-        return "[請輸入使用者帳號]"
+        return "請輸入使用者帳號"
     case PTTState.Password:
-        return "[請輸入使用者密碼]"
+        return "請輸入使用者密碼"
     case PTTState.Horse:
-        return "[PTT批踢踢實業坊]"
+        return "PTT批踢踢實業坊"
     case PTTState.Overloading:
-        return "[系統過載]"
+        return "系統過載"
     case PTTState.HeavyLogin:
-        return "[登入太頻繁]"
+        return "登入太頻繁"
     case PTTState.AlreadyLogin:
-        return "[有重複登入]"
+        return "有重複登入"
     case PTTState.WrongPassword:
-        return "[錯誤的密碼]"
+        return "錯誤的帳號密碼"
     case PTTState.Accept:
-        return "[密碼正確]"
+        return "密碼正確"
     case PTTState.Logging:
-        return "[登入中]"
+        return "登入中"
     case PTTState.Synchronizing:
-        return "[同步處理中]"
+        return "同步處理中"
     case PTTState.Log:
-        return "[要刪除上次錯誤的嘗試紀錄嗎]"
+        return "要刪除上次錯誤的嘗試紀錄嗎"
     case PTTState.AnyKey:
-        return "[任意鍵繼續]"
+        return "任意鍵繼續"
     case PTTState.MainPage:
-        return "[主功能表]"
+        return "主功能表"
     case PTTState.Popular:
-        return "[熱門看板]"
+        return "熱門看板"
     case PTTState.Favorite:
-        return "[我的最愛]"
+        return "我的最愛"
     case PTTState.Search:
-        return "[搜尋]"
+        return "搜尋"
     case PTTState.SearchGroup:
-        return "[相關看板一覽表]"
+        return "相關看板一覽表"
     case PTTState.AddFavorite:
-        return "[增加我的最愛]"
+        return "增加我的最愛"
     case PTTState.Board:
-        return "[看板]"
+        return "看板"
     case PTTState.BoardInfo:
-        return "[看板資訊]"
+        return "看板資訊"
     case PTTState.Article:
-        return "[瀏覽文章]"
+        return "瀏覽文章"
     case PTTState.ArticleID:
-        return "[文章ID]"
+        return "文章ID"
     case PTTState.Comment:
-        return "[推/噓]"
+        return "推/噓"
     case PTTState.ExitConcern:
-        return "[確定要離開]"
+        return "確定要離開"
     case PTTState.AIDNotFound:
-        return "[找不到文章代碼]"
+        return "找不到文章代碼"
+    case PTTState.Connected:
+        return "已連線"
+    case PTTState.WebSocketClosed:
+        return "連線關閉"
+    case PTTState.WebSocketFailed:
+        return "連線失敗"
+    case PTTState.Timeout:
+        return "連線逾時"
     default:
-        return "[未定義的狀態]"
+        return "未定義的狀態"
     }
 }
 

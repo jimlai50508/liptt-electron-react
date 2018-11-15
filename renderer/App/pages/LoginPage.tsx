@@ -1,9 +1,9 @@
 import React, { Component, ChangeEvent } from "react"
 import { Redirect } from "react-router-dom"
 import autobind from "autobind-decorator"
-import { Button, Icon, Input, Row, Col, Layout, Form } from "antd"
+import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
-import { PromiseIpcRenderer } from "model"
+import { PromiseIpcRenderer, PTTState, StateString } from "model"
 
 interface ComponentProps {
 
@@ -55,9 +55,39 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
             username: this.state.username,
             password: this.state.password,
         }
-        PromiseIpcRenderer.send<boolean>("/login", user)
-        .then((ok) => {
-            this.setState((prev, _) => ({...prev, loading: false, logined: ok}))
+        PromiseIpcRenderer.send<PTTState>("/login", user)
+        .then((s: PTTState) => {
+            if (s === PTTState.MainPage) {
+                this.setState((prev, _) => ({...prev, loading: false, logined: true}))
+            } else {
+                this.setState((prev, _) => ({...prev, loading: false, logined: false}))
+                switch (s) {
+                case PTTState.WebSocketFailed:
+                    notification.config({placement: "topRight"})
+                    setTimeout(() => {
+                        notification.error({message: "", description: "連線失敗"})
+                    }, 10)
+                    break
+                case PTTState.Overloading:
+                    notification.config({placement: "topRight"})
+                    setTimeout(() => {
+                        notification.warn({message: "", description: "系統過載..."})
+                    }, 10)
+                    break
+                case PTTState.HeavyLogin:
+                    notification.config({placement: "topRight"})
+                    setTimeout(() => {
+                        notification.warn({message: "", description: "登入太多次了"})
+                    }, 10)
+                    break
+                default:
+                    notification.config({placement: "topRight"})
+                    setTimeout(() => {
+                        notification.error({message: "", description: StateString(s)})
+                    }, 10)
+                    break
+                }
+            }
         })
         this.setState((prev, _) => ({...prev, loading: true}))
     }
