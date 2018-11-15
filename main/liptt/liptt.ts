@@ -791,6 +791,13 @@ export class LiPTT extends Client {
         return [aid, url, coin]
     }
 
+    public checkEmail(): boolean {
+        if (this.snapshot.GetSubstring(0, 30, 48).trim() === "你有新信件") {
+            return true
+        }
+        return false
+    }
+
     public async left(): Promise<void> {
         await this.Send(Control.Left())
     }

@@ -6,8 +6,9 @@ import { version as antdVersion } from "antd"
 import { Layout, Menu, Button, Row, Col, notification } from "antd"
 import { ClickParam } from "antd/lib/menu"
 import { ipcRenderer } from "electron"
-
+import { PromiseIpcRenderer } from "model"
 import style from "./MainPage.scss"
+import { Hot } from "./Hot"
 import { Favorite } from "./Favorite"
 
 import { Test } from "./Test"
@@ -60,11 +61,13 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     private renderContent(): JSX.Element {
         switch (this.state.activeMenu) {
+            case "Hot":
+                return <Hot />
             case "Favorite":
                 return <Favorite/>
             case "Test":
                 return <Test />
-            case "Home":
+            case "Snapshot":
                 return <LegacyTerminal />
             default:
             return <Favorite />
@@ -73,6 +76,20 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
         this.setState((prev, _) => ({...prev, show: true}))
+
+        setImmediate(async () => {
+            const hasEmail = await PromiseIpcRenderer.send<boolean>("/check-email")
+            if (hasEmail) {
+                notification.config({placement: "bottomRight"})
+                setTimeout(() => {
+                    notification.open({
+                        message: "liptt 通知",
+                        description: "你有新的信件喔!",
+                        icon: <Icon type="mail" style={{ color: "#108ee9" }} />,
+                    })
+                }, 100)
+            }
+        })
     }
 
     public render() {
@@ -84,17 +101,21 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             <Layout className={style.main}>
                 <Layout.Sider collapsed={this.state.collapsed} onCollapse={this.onCollapse} collapsible>
                     <Menu theme="dark" mode="inline" onClick={this.onMenuClick}>
+                        <Menu.Item key="Hot">
+                            <Icon type="fire" />
+                            <span>熱門看板</span>
+                        </Menu.Item>
                         <Menu.Item key="Favorite">
                             <Icon type="star" />
                             <span>我的最愛</span>
                         </Menu.Item>
-                        <Menu.Item key="Home">
-                            <Icon type="home" />
-                            <span>快照</span>
-                        </Menu.Item>
                         <Menu.Item key="Test" >
-                            <Icon type="qrcode" />
+                            <Icon type="profile" />
                             <span>測試頁</span>
+                        </Menu.Item>
+                        <Menu.Item key="Snapshot">
+                            <Icon type="border" />
+                            <span>快照</span>
                         </Menu.Item>
                         <Menu.SubMenu
                             key="sub1"

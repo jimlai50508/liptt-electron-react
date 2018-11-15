@@ -210,6 +210,13 @@ export class App {
             lock.signal()
         })
 
+        ipcMain.on("/check-email", async (_: EventEmitter) => {
+            await lock.wait()
+            const result = this.client.checkEmail()
+            this.mainWindow.webContents.send("/check-email", result)
+            lock.signal()
+        })
+
         ipcMain.on("/favor", async (_: EventEmitter) => {
             await lock.wait()
             const data: FavoriteItem[] = await this.client.getFavorite()
