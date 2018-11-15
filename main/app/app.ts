@@ -18,7 +18,7 @@ import { isDevMode, Debug } from "./util"
 import * as JSONPackage from "../../../package.json"
 import { LiPTT } from "../liptt"
 import { PTTState } from "../model/state"
-import { User, FavoriteItem, ArticleAbstract, ArticleHeader } from "../model"
+import { User, FavoriteItem, ArticleAbstract, ArticleHeader, HotItem } from "../model"
 
 export class App {
 
@@ -221,6 +221,13 @@ export class App {
             await lock.wait()
             const data: FavoriteItem[] = await this.client.getFavorite()
             this.mainWindow.webContents.send("/favor", data)
+            lock.signal()
+        })
+
+        ipcMain.on("/hot", async (_: EventEmitter) => {
+            await lock.wait()
+            const data: HotItem[] = await this.client.getHot()
+            this.mainWindow.webContents.send("/hot", data)
             lock.signal()
         })
 

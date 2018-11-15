@@ -21,7 +21,7 @@ export enum ArticleType {
 export interface ArticleAbstract {
     key: number
     like: number
-    date: string
+    date?: string
     state: ReadState
     deleted: boolean
     board: string

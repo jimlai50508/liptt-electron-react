@@ -16,7 +16,7 @@ export class Control {
     }
 
     public static Right() {
-        return Buffer.from([0x1B, 0x5B, 0x43])
+        return Buffer.from([0x72])
     }
 
     public static Left() {

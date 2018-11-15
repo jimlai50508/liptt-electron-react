@@ -1,10 +1,39 @@
 import React, { Component } from "react"
+import { Table } from "antd"
+import { ColumnProps } from "antd/lib/table"
+import { HotItem, PromiseIpcRenderer } from "model"
+
+const columns: Array<ColumnProps<HotItem>> = [
+    {
+        title: "Index",
+        dataIndex: "key",
+        sorter: (a, b) => a.key - b.key,
+    },
+    {
+        title: "Name",
+        dataIndex: "name",
+    },
+    {
+        title: "Type",
+        dataIndex: "type",
+    },
+    {
+        title: "Description",
+        dataIndex: "description",
+    },
+    {
+        title: "Popular",
+        dataIndex: "popularity",
+    },
+]
+
 interface ComponentProps {
 
 }
 
 interface ComponentState {
-
+    loading: boolean,
+    data: HotItem[]
 }
 
 export class Hot extends Component<ComponentProps, ComponentState> {
@@ -18,7 +47,10 @@ export class Hot extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-
+        PromiseIpcRenderer.send<HotItem[]>("/hot")
+        .then((items) => {
+            this.setState((prev, _) => ({...prev, data: items, loading: false}))
+        })
     }
 
     public componentWillUnmount() {
@@ -26,8 +58,7 @@ export class Hot extends Component<ComponentProps, ComponentState> {
 
     public render() {
         return (
-        <div>
-            <div />
-        </div>)
+            <Table {...this.state} columns={columns} dataSource={this.state.data}/>
+        )
     }
 }

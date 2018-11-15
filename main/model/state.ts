@@ -31,7 +31,7 @@ export enum PTTState {
     /** 主功能表 */
     MainPage,
     /** 熱門看板 */
-    Popular,
+    Hot,
     /** 我的最愛 */
     Favorite,
     /** 搜尋 */
@@ -42,6 +42,8 @@ export enum PTTState {
     AddFavorite,
     /** 增加我的最愛 相關看板一覽表 */
     AddFavoriteGroup,
+    /** 分類看板 */
+    Category,
     /** 看板 */
     Board,
     /** 看板資訊 */
@@ -98,7 +100,7 @@ export function StateString(s: PTTState): string {
         return "任意鍵繼續"
     case PTTState.MainPage:
         return "主功能表"
-    case PTTState.Popular:
+    case PTTState.Hot:
         return "熱門看板"
     case PTTState.Favorite:
         return "我的最愛"
@@ -108,6 +110,8 @@ export function StateString(s: PTTState): string {
         return "相關看板一覽表"
     case PTTState.AddFavorite:
         return "增加我的最愛"
+    case PTTState.Category:
+        return "分類看板"
     case PTTState.Board:
         return "看板"
     case PTTState.BoardInfo:
@@ -203,8 +207,12 @@ export function StateFilter(t: Terminal) {
     } else if (testBoard(t.GetString(0), t.GetString(23))) {
         flag = undefined
         return PTTState.Board
-    } else if (t.GetString(2) === "   編號   看  板       類別   中   文   敘   述               人氣 板   主      ") {
+    } else if (t.GetString(0).startsWith("【分類看板】"))  {
+        return PTTState.Category
+    } else if (testFavor(t.GetString(2), line23)) {
         return PTTState.Favorite
+    } else if (testHot(t.GetString(2), line23)) {
+        return PTTState.Hot
     } else if (t.GetString(22).startsWith("找不到這個文章代碼(AID)")) {
         return PTTState.AIDNotFound
     } else if (t.GetString(1).startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
@@ -219,6 +227,24 @@ export function StateFilter(t: Terminal) {
 function testBoard(line0: string, line23: string): boolean {
     if (line0.startsWith("【板主:") && line23 === " 文章選讀  (y)回應(X)推文(^X)轉錄 (=[]<>)相關主題(/?a)找標題/作者 (b)進板畫面   ") {
         return true
+    }
+    return false
+}
+
+function testHot(line2: string, line23: string): boolean {
+    if (line2 === "   編號   看  板       類別   中   文   敘   述               人氣 板   主      ") {
+        if (line23.trim() === "選擇看板    (m)加入/移出最愛 (y)只列最愛 (v/V)已讀/未讀") {
+            return true
+        }
+    }
+    return false
+}
+
+function testFavor(line2: string, line23: string): boolean {
+    if (line2 === "   編號   看  板       類別   中   文   敘   述               人氣 板   主      ") {
+        if (line23.trim() === "選擇看板    (a)增加看板 (s)進入已知板名 (y)列出全部 (v/V)已讀/未讀") {
+            return true
+        }
     }
     return false
 }

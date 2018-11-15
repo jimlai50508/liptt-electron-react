@@ -70,7 +70,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             case "Snapshot":
                 return <LegacyTerminal />
             default:
-            return <Favorite />
+            return <Hot />
         }
     }
 

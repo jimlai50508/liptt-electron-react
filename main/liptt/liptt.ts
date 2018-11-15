@@ -1,5 +1,5 @@
 import { Client, Control, SocketState } from "../client"
-import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader } from "../model"
+import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader, HotItem } from "../model"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { PTTState, StateFilter } from "../model/state"
 import { Debug } from "../app"
@@ -165,17 +165,21 @@ export class LiPTT extends Client {
 
     public async getFavorite(): Promise<FavoriteItem[]> {
 
-        if (this.snapshotStat !== PTTState.MainPage) {
-            let [, s] = await this.Send(Control.Left())
-            while (s !== PTTState.MainPage) {
-                [, s] = await this.Send(Control.Left())
-            }
+        let term: Terminal = this.snapshot
+        let stat: PTTState = this.snapshotStat
+        while (stat !== PTTState.MainPage) {
+            [term, stat] = await this.Send(Control.Left())
         }
 
         const items: FavoriteItem[] = []
-        let ok = true
+        let ok = true;
 
-        let [term, stat] = await this.Send(Control.Favorite())
+        [term, stat] = await this.Send(Control.Favorite())
+
+        const first = term.GetSubstring(3, 0, 2).trim()
+        if (first !== "●" && first !== ">") {
+            [term, stat] = await this.Send(Control.Home())
+        }
 
         while (stat === PTTState.Favorite && ok) {
             let i = 3
@@ -216,61 +220,26 @@ export class LiPTT extends Client {
                 }
 
                 const name = term.GetSubstring(i, 10, 22).trim()
-                const desc = term.GetSubstring(i, 30, 64).trim()
+                const description = term.GetSubstring(i, 30, 64).trim()
                 if (itemType === FavoriteItemType.Folder) {
                     items.push({
                         key: index,
                         type: itemType,
                         name,
-                        description: desc,
+                        description,
                     })
                     continue
                 }
 
                 const popuStr = term.GetSubstring(i, 64, 67)
-                let popu: number = 0
-
-                switch (popuStr) {
-                case "HOT":
-                    popu = 100
-                    break
-                case "爆!":
-                    const block = term.GetBlock(i, 66)
-                    switch (block.Foreground) {
-                    case 37:
-                        popu = 1000
-                        break
-                    case 31:
-                        popu = 2000
-                        break
-                    case 34:
-                        popu = 5000
-                        break
-                    case 36:
-                        popu = 10000
-                        break
-                    case 32:
-                        popu = 30000
-                        break
-                    case 33:
-                        popu = 60000
-                        break
-                    case 35:
-                        popu = 100000
-                        break
-                    }
-                    break
-                default:
-                    popu = parseInt(popuStr, 10)
-                    break
-                }
+                const popularity: number = this.popular(popuStr, term.GetBlock(i, 66))
 
                 items.push({
                     key: index,
                     type: itemType,
                     name,
-                    description: desc,
-                    popularity: popu,
+                    description,
+                    popularity,
                 })
             }
 
@@ -281,6 +250,78 @@ export class LiPTT extends Client {
 
         await this.Send(Control.Home())
         await this.Send(Control.Left())
+        return items
+    }
+
+    public async getHot(): Promise<HotItem[]> {
+        let t: Terminal = this.snapshot
+        let s: PTTState = this.snapshotStat
+        while (s !== PTTState.MainPage) {
+            [t, s] = await this.Send(Control.Left())
+        }
+
+        [t, s] = await this.Send(Control.Class())
+
+        const items: HotItem[] = []
+        let row = this.rowOfCursor(t)
+        let right = t.GetString(row).includes("即時熱門看板")
+
+        while (!right) {
+            [t, s] = await this.Send(Control.Down())
+            row = this.rowOfCursor(t)
+            right = t.GetString(row).includes("即時熱門看板")
+        }
+        [t, s] = await this.Send(Control.Right())
+        const first = t.GetSubstring(3, 0, 2).trim()
+        if (first !== "●" && first !== ">") {
+            [t, s] = await this.Send(Control.Home())
+        }
+
+        let ok = true
+        while (s === PTTState.Hot && ok) {
+            let i = 3
+            const test = t.GetSubstring(3, 0, 2).trim()
+            if (test !== "●" && test !== ">") {
+                break
+            }
+            for (; i < 23; i++) {
+                const indexStr = t.GetSubstring(i, 3, 7).trim()
+                let index = Number.MAX_SAFE_INTEGER
+                if (indexStr.length > 0) {
+                    index = parseInt(indexStr, 10)
+                    if (index <= items.length) {
+                        continue
+                    }
+                } else {
+                    ok = false
+                    break
+                }
+
+                const type = t.GetSubstring(i, 23, 27).trim()
+                const name = t.GetSubstring(i, 10, 22).trim()
+                const description = t.GetSubstring(i, 30, 64).trim()
+
+                const popuStr = t.GetSubstring(i, 64, 67)
+                const popularity: number = this.popular(popuStr, t.GetBlock(i, 66))
+
+                items.push({
+                    key: index,
+                    type,
+                    name,
+                    description,
+                    popularity,
+                })
+            }
+
+            if (ok) {
+                [t, s] = await this.Send(Control.PageDown())
+            }
+        }
+
+        await this.Send(Control.Home())
+        while (s !== PTTState.MainPage) {
+            [t, s] = await this.Send(Control.Left())
+        }
         return items
     }
 
@@ -734,9 +775,47 @@ export class LiPTT extends Client {
         return result
     }
 
+    private popular(popuStr: string, refBlock: Block) {
+        let popu: number = 0
+        switch (popuStr) {
+        case "HOT":
+            popu = 100
+            break
+        case "爆!":
+            switch (refBlock.Foreground) {
+            case 37:
+                popu = 1000
+                break
+            case 31:
+                popu = 2000
+                break
+            case 34:
+                popu = 5000
+                break
+            case 36:
+                popu = 10000
+                break
+            case 32:
+                popu = 30000
+                break
+            case 33:
+                popu = 60000
+                break
+            case 35:
+                popu = 100000
+                break
+            }
+            break
+        default:
+            popu = parseInt(popuStr, 10)
+            break
+        }
+        return popu
+    }
+
     private rowOfCursor(term: Terminal): number {
         for (let i = 3; i < 23; i++) {
-            const x = term.GetSubstring(i, 0, 2)
+            const x = term.GetString(i).trimLeft()
             if (x.startsWith(">") || x.startsWith("●")) {
                 return i
             }
