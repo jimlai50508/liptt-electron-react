@@ -2,7 +2,7 @@ import { EventEmitter } from "events"
 import { Big5UAO } from "../encoding"
 import { Terminal } from "../model/terminal"
 import * as WebSocket from "ws"
-import { Debug } from "../app"
+import { Debug } from "../util"
 
 /** PTT 客戶端 */
 export class Client extends EventEmitter {

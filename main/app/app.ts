@@ -14,11 +14,18 @@ import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from "electro
 import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
-import { isDevMode, Debug } from "./util"
 import * as JSONPackage from "../../../package.json"
+import { isDevMode, Debug } from "../util"
+
 import { LiPTT } from "../liptt"
-import { PTTState } from "../model/state"
-import { User, FavoriteItem, ArticleAbstract, ArticleHeader, HotItem } from "../model"
+import {
+    User,
+    FavoriteItem,
+    ArticleAbstract,
+    ArticleHeader,
+    HotItem,
+    PTTState,
+} from "../model"
 
 export class App {
 

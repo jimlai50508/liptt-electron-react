@@ -2,7 +2,7 @@ import { Client, Control, SocketState } from "../client"
 import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader, HotItem } from "../model"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { PTTState, StateFilter } from "../model/state"
-import { Debug } from "../app"
+import { Debug } from "../util"
 
 export class LiPTT extends Client {
 

@@ -1,8 +1,8 @@
 import React, { Component, MouseEvent, UIEvent, HTMLAttributes, CSSProperties } from "react"
 import autobind from "autobind-decorator"
 import { Spin } from "antd"
+import fastdom from "fastdom"
 import * as style from "./ScrollView.scss"
-import Semaphore from "semaphore-async-await"
 
 interface ComponentProps extends HTMLAttributes<HTMLDivElement> {
     getMore: () => Promise<JSX.Element[]>
@@ -79,7 +79,8 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     @autobind
     private onScroll(e: UIEvent<HTMLDivElement>) {
         if (!this.lock) {
-            window.requestAnimationFrame(this.onUpdate)
+            fastdom.measure(this.onUpdate)
+            // window.requestAnimationFrame(this.onUpdate)
             this.lock = true
         }
     }
