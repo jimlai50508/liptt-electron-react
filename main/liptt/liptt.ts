@@ -176,7 +176,7 @@ export class LiPTT extends Client {
 
         [term, stat] = await this.Send(Control.Favorite())
 
-        const first = term.GetSubstring(3, 0, 2).trim()
+        let first = term.GetSubstring(3, 0, 2).trim()
         if (first !== "●" && first !== ">") {
             [term, stat] = await this.Send(Control.Home())
         }
@@ -248,7 +248,10 @@ export class LiPTT extends Client {
             }
         }
 
-        await this.Send(Control.Home())
+        first = term.GetSubstring(3, 0, 2).trim()
+        if (first !== "●" && first !== ">") {
+            [term, stat] = await this.Send(Control.Home())
+        }
         await this.Send(Control.Left())
         return items
     }

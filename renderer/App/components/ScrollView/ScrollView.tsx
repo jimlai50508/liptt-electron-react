@@ -34,7 +34,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     private hHide: number
     private prevTime: number
     private readonly hideDuration: number = 1500
-    private readonly lazyDuration: number = 200
+    private readonly lazyDuration: number = 30
     private thumbTop: number = 0
     private end: boolean = false
     private unmount: boolean = false
@@ -54,7 +54,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         if (this.props.autoHideThumb) {
             this.hHide = window.setTimeout((() => {
                 if (this.hHide) {
-                    this.setState((prev, props) => {
+                    this.setState((prev, _) => {
                         return {...prev, thumbHide: true}
                     })
                 }
@@ -80,7 +80,6 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     private onScroll(e: UIEvent<HTMLDivElement>) {
         if (!this.lock) {
             fastdom.measure(this.onUpdate)
-            // window.requestAnimationFrame(this.onUpdate)
             this.lock = true
         }
     }
@@ -92,7 +91,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
             this.hHide = null
             this.hHide = window.setTimeout((() => {
                 if (this.hHide) {
-                    this.setState((prev, prop) => {
+                    this.setState((prev, _) => {
                         return {...prev, thumbHide: true}
                     })
                 }
