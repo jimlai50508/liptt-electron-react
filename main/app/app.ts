@@ -71,18 +71,18 @@ export class App {
                 // 安裝 react 開發者工具
                 installExtension(REACT_DEVELOPER_TOOLS, true)
                 .then((name: string) => {
-                    // Debug.log(`Added Extension:  ${name}`)
+                    console.log(`Added Extension:  ${name}`)
                 })
                 .catch((err: any) => {
-                    // Debug.error("REACT_DEVELOPER_TOOLS ", err)
+                    console.error("REACT_DEVELOPER_TOOLS ", err)
                 })
                 // 安裝 redux 開發者工具
                 installExtension(REDUX_DEVTOOLS)
                 .then((name: string) => {
-                    // Debug.log(`Added Extension:  ${name}`)
+                    console.log(`Added Extension:  ${name}`)
                 })
                 .catch((err: any) => {
-                    // Debug.error("REDUX_DEVTOOLS ", err)
+                    console.error("REDUX_DEVTOOLS ", err)
                 })
             }
 

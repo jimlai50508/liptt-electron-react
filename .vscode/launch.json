@@ -14,7 +14,8 @@
                 "runtimeExecutable": "${workspaceFolder}\\node_modules\\.bin\\electron.cmd"
             },
             "trace": true,
-            "sourceMaps": true
+            "sourceMaps": true,
+            "outputCapture": "std"
         },
     ]
 }
