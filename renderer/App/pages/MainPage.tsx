@@ -1,5 +1,5 @@
 import React, { Component, MouseEvent } from "react"
-import { Redirect, Switch, Route, Link } from "react-router-dom"
+import { Redirect } from "react-router-dom"
 import autobind from "autobind-decorator"
 import { Icon } from "antd"
 import { version as antdVersion } from "antd"

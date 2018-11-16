@@ -21,6 +21,7 @@ export class LiPTT extends Client {
     private curArticleEnd: boolean
     private snapshot: Terminal
     private snapshotStat: PTTState
+
     constructor() {
         super()
         this.sub()
@@ -60,11 +61,6 @@ export class LiPTT extends Client {
 
     private onSocketChanged(stat: SocketState) {
         this.scst = stat
-        if (stat === SocketState.Connected) {
-            Debug.warn("socket open")
-        } else if (stat === SocketState.Closed) {
-            Debug.warn("socket close")
-        }
     }
 
     /** 建立連線, 然後登入 */
@@ -387,7 +383,7 @@ export class LiPTT extends Client {
         }
     }
 
-    public async getArticleInfoWithAbs(a: ArticleAbstract): Promise<ArticleHeader> {
+    public async getArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
 
         let h: ArticleHeader = {
             hasHeader: false,
@@ -403,11 +399,19 @@ export class LiPTT extends Client {
             return h
         }
 
-        if (s !== PTTState.Board) {
+        if ((s !== PTTState.Board) && (s !== PTTState.Article)) {
             return {}
         }
 
-        [t, s] = await this.Send(a.aid, 0x0D, 0x72)
+        [t, s] = await this.goToArticle(a.aid)
+        if (s === PTTState.Board) {
+            [t, s] = await this.Send(Control.Right())
+        } else {
+            await this.Send(Control.AnyKey())
+            h.deleted = true
+            return h
+        }
+
         if (s === PTTState.Article) {
             if (t.GetString(3).startsWith("───────────────────────────────────────")) {
                 h.hasHeader = true
@@ -452,11 +456,17 @@ export class LiPTT extends Client {
                 }
             }
             h = {...h, aid: a.aid, url: a.url, coin: a.coin}
+            await this.Send(Control.Left())
         } else {
             h.deleted = true
+            console.log("getArticleHeader(): article is not exist.")
+            await this.Send(Control.AnyKey())
         }
-        await this.Send(Control.Left())
         return h
+    }
+
+    private async goToArticle(aid: string) {
+        return this.Send(aid, 0x0D)
     }
 
     // public async enterArticle(a: ArticleAbstract): Promise<boolean> {

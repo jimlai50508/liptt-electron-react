@@ -52,6 +52,8 @@ export enum PTTState {
     Article,
     /** 文章ID */
     ArticleID,
+    /** 此文章無內容 */
+    ArticleDeleted,
     /** 推/噓 */
     Comment,
     /** 確定要離開? */
@@ -120,6 +122,8 @@ export function StateString(s: PTTState): string {
         return "瀏覽文章"
     case PTTState.ArticleID:
         return "文章ID"
+    case PTTState.ArticleDeleted:
+        return "文章已被刪除"
     case PTTState.Comment:
         return "推/噓"
     case PTTState.ExitConcern:
@@ -154,6 +158,8 @@ export function StateFilter(t: Terminal) {
         return PTTState.HeavyLogin
     } else if (line23.includes("您要刪除以上錯誤嘗試的記錄嗎")) {
         return PTTState.Log
+    } else if (line23.trimLeft().startsWith("◆ 此文章無內容")) {
+        return PTTState.ArticleDeleted
     } else if (line23.includes("您覺得這篇文章")) {
         return PTTState.Comment
     } else if (articleFootReg.test(line23)) {

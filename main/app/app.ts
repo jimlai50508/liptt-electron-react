@@ -10,7 +10,7 @@ import {
     MenuItem,
     EventEmitter,
 } from "electron"
-import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from "electron-devtools-installer"
+import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer"
 import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
@@ -26,6 +26,7 @@ import {
     HotItem,
     PTTState,
 } from "../model"
+import { SocketState } from "../client"
 
 export class App {
 
@@ -84,13 +85,13 @@ export class App {
                     console.error("REACT_DEVELOPER_TOOLS ", err)
                 })
                 // 安裝 redux 開發者工具
-                installExtension(REDUX_DEVTOOLS)
-                .then((name: string) => {
-                    console.log(`Added Extension:  ${name}`)
-                })
-                .catch((err: any) => {
-                    console.error("REDUX_DEVTOOLS ", err)
-                })
+                // installExtension(REDUX_DEVTOOLS)
+                // .then((name: string) => {
+                //     console.log(`Added Extension:  ${name}`)
+                // })
+                // .catch((err: any) => {
+                //     console.error("REDUX_DEVTOOLS ", err)
+                // })
             }
 
             globalShortcut.register("Escape", () => {
@@ -262,8 +263,8 @@ export class App {
         /// 取得文章資訊
         ipcMain.on("/board/article-header", async (_: EventEmitter, ab: ArticleAbstract) => {
             await lock.wait()
-            const info = await this.client.getArticleInfoWithAbs(ab)
-            this.mainWindow.webContents.send("/board/article-header", info)
+            const header = await this.client.getArticleHeader(ab)
+            this.mainWindow.webContents.send("/board/article-header", header)
             lock.signal()
         })
 
@@ -293,6 +294,10 @@ export class App {
 
         ipcMain.on("/terminal-snapshot", async (_: EventEmitter) => {
             this.mainWindow.webContents.send("/terminal-snapshot", this.client.GetTerminalSnapshot())
+        })
+
+        this.client.on("socket", (state: SocketState) => {
+            this.mainWindow.webContents.send("/socket", state)
         })
     }
 }

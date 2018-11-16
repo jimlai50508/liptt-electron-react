@@ -75,6 +75,8 @@ export class Test extends Component<ComponentProps, ComponentState> {
 
                     const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
                     if (info.deleted) {
+                        item.deleted = info.deleted
+                        console.error(info)
                         return
                     }
 
