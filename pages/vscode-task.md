@@ -13,3 +13,8 @@
 - `分析(webpack)` 是用來分析前端代碼的各個元件大小，如果太大的話在載入時會降低使用者體驗。
 - `分析(typescript)` 用tslint檢查typescript代碼是否按照SOP撰寫。
 - `Release 安裝包` 釋出懶人化安裝包使用(實驗中)。
+
+# 一般使用
+1. `取得相依性套件(nodejs)`
+2. `建置(webpack development)`
+3. vscode中按`F5`執行
