@@ -48,11 +48,11 @@ export class LiPTT extends Client {
 
     private onUpdated(term: Terminal) {
         const stat = StateFilter(term)
+        this.snapshot = term.DeepCopy()
+        this.snapshotStat = stat
         if (stat === PTTState.WhereAmI) {
             return
         }
-        this.snapshot = term.DeepCopy()
-        this.snapshotStat = stat
         this.emit("StateUpdated", term, stat)
     }
 
@@ -473,7 +473,7 @@ export class LiPTT extends Client {
         return h
     }
 
-    private async goToArticle(aid: string) {
+    private async goToArticle(aid: string): Promise<[Terminal, PTTState]> {
         return this.Send(aid, 0x0D)
     }
 
@@ -512,8 +512,8 @@ export class LiPTT extends Client {
         const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
         const lines: Block[][] = []
         let t: Terminal = this.snapshot
-        const prev = t.DeepCopy()
         let s: PTTState = this.snapshotStat
+        const prev = t.DeepCopy()
         let pagedown = true
 
         while (this.snapshotStat !== PTTState.Article || h.aid !== this.curArticle.aid) {

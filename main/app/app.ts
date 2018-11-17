@@ -26,6 +26,7 @@ import {
     HotItem,
     PTTState,
     SocketState,
+    toString,
 } from "../model"
 
 export class App {
@@ -279,7 +280,6 @@ export class App {
         ipcMain.on("/article/get-more", async (_: EventEmitter, h: ArticleHeader) => {
             await lock.wait()
             const ans = await this.client.getMoreArticleContent(h)
-            console.log(ans)
             this.mainWindow.webContents.send("/article/get-more", ans)
             lock.signal()
         })

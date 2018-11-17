@@ -152,8 +152,6 @@ export function StateFilter(t: Terminal) {
     const line23 = t.GetString(23)
     if (t.GetString(1).startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
         return PTTState.Search
-    } else if (t.GetSubstring(23, 66, 74) === "[呼叫器]") {
-        return PTTState.MainPage
     } else if (line23.includes("登入太頻繁")) {
         return PTTState.HeavyLogin
     } else if (line23.includes("您要刪除以上錯誤嘗試的記錄嗎")) {
@@ -177,6 +175,8 @@ export function StateFilter(t: Terminal) {
             prevMatch = articleFootReg.exec(line23)
         }
         return PTTState.Article
+    } else if (t.GetSubstring(23, 66, 74) === "[呼叫器]") {
+        return PTTState.MainPage
     } else if (line22.includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
     } else if (line22.includes("您確定要離開")) {
@@ -210,7 +210,7 @@ export function StateFilter(t: Terminal) {
         } else {
             return PTTState.WhereAmI
         }
-    } else if (testBoard(t.GetString(0), t.GetString(23))) {
+    } else if (testBoard(t.GetString(0), t.GetString(1))) {
         flag = undefined
         return PTTState.Board
     } else if (t.GetString(0).startsWith("【分類看板】"))  {
@@ -230,9 +230,11 @@ export function StateFilter(t: Terminal) {
     }
 }
 
-function testBoard(line0: string, line23: string): boolean {
-    if (line0.startsWith("【板主:") && line23 === " 文章選讀  (y)回應(X)推文(^X)轉錄 (=[]<>)相關主題(/?a)找標題/作者 (b)進板畫面   ") {
-        return true
+function testBoard(line0: string, line1: string): boolean {
+    if (line0.startsWith("【板主:")) {
+        if (line1 === "[←]離開 [→]閱讀 [Ctrl-P]發表文章 [d]刪除 [z]精華區 [i]看板資訊/設定 [h]說明   ") {
+            return true
+        }
     }
     return false
 }

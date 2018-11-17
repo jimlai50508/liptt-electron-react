@@ -71,13 +71,13 @@ export class Test extends Component<ComponentProps, ComponentState> {
                             await PromiseIpcRenderer.send<void>("/left")
                         }
                         this.prevab = item
-                    }
 
-                    const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
-                    if (info.deleted) {
-                        item.deleted = info.deleted
-                        console.error(info)
-                        return
+                        // const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
+                        // if (info.deleted) {
+                        //     item.deleted = info.deleted
+                        //     console.error(info)
+                        //     return
+                        // }
                     }
 
                     const lines = await PromiseIpcRenderer.send<Block[][]>("/article/get-more", item)
