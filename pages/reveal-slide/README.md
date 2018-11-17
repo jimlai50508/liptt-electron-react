@@ -9,27 +9,27 @@
 lightyen
 
 * 2017 年還在玩C#
-* 完全不懂 html,js,css ...
-* 2018.05 開始接觸前端
+* 前後端是啥完全不懂
+* 2018.03 開始接觸前端
 * 2018.08 突然心血來潮
 
 ---
 
-## 然後就這麼蹦出來了
+## 然後就這麼地蹦出來了
 
 ---
 
 ## 技術堆
-* nodejs
-* React
-* electron
-* typescript,javascript, webpack, ...
+* html, javascript, css
+* typescript, scss 
+* nodejs, webpack, ...
+* Electron, React, Mobx, ...
 
 ---
 
 ## 也許還不夠好
 
-> 我需要你的參與
+#### 我需要你的參與
 
 ---
 
