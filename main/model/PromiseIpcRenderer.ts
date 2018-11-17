@@ -9,7 +9,6 @@ export class PromiseIpcRenderer {
             ipcRenderer.once(channel, (e: EventEmitter, response: Response) => {
                 resolve(response)
             })
-            console.warn("render send " + channel)
             ipcRenderer.send(channel, ...args)
         })
     }

@@ -22,14 +22,15 @@ export default class extends Component<ComponentProps, ComponentState> {
 
     constructor(props: ComponentProps) {
         super(props)
-        this.state = { isDevMode: true }
+        this.state = { isDevMode: false }
         this.appStore = new AppStore()
     }
 
     public componentDidMount() {
         PromiseIpcRenderer.send<boolean>("/is-dev-mode")
         .then((mode) => {
-            this.setState((prev, props) => ({isDevMode: mode}))
+            this.appStore.setDevMode(mode)
+            this.setState({isDevMode: mode})
         })
     }
 

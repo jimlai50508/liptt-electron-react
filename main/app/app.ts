@@ -65,6 +65,8 @@ export class App {
         app.setName(JSONPackage.name)
         app.on("ready", () => {
             this.newWindow()
+            this.addAPI()
+            this.onReady()
         })
         app.on("activate", () => {
             // on OS X it's common to re-create a window in the app when the
@@ -73,50 +75,42 @@ export class App {
                 this.newWindow()
             }
         })
-        app.on("ready", () => {
+    }
 
+    private onReady() {
+
+        if (isDevMode()) {
+            // 安裝 react 開發者工具
+            installExtension(REACT_DEVELOPER_TOOLS, true)
+            .then((name: string) => {
+                console.log(`Added Extension:  ${name}`)
+            })
+            .catch((err: any) => {
+                console.error("REACT_DEVELOPER_TOOLS ", err)
+            })
+        }
+
+        globalShortcut.register("Escape", () => {
+            if (this.mainWindow.isFocused()) {
+                this.quit()
+            }
+        })
+        if (isDevMode()) {
+            globalShortcut.register("f5", () => {
+                this.mainWindow.reload()
+            })
+            globalShortcut.register("CommandOrControl+R", () => {
+                this.mainWindow.reload()
+            })
+        }
+        this.mainWindow.once("show", () => {
             if (isDevMode()) {
-                // 安裝 react 開發者工具
-                installExtension(REACT_DEVELOPER_TOOLS, true)
-                .then((name: string) => {
-                    console.log(`Added Extension:  ${name}`)
-                })
-                .catch((err: any) => {
-                    console.error("REACT_DEVELOPER_TOOLS ", err)
-                })
-                // 安裝 redux 開發者工具
-                // installExtension(REDUX_DEVTOOLS)
-                // .then((name: string) => {
-                //     console.log(`Added Extension:  ${name}`)
-                // })
-                // .catch((err: any) => {
-                //     console.error("REDUX_DEVTOOLS ", err)
-                // })
-            }
-
-            globalShortcut.register("Escape", () => {
-                if (this.mainWindow.isFocused()) {
-                    this.quit()
+                RendererConsole.warn("electron in development mode")
+                const o: NotificationOptions = {
+                    body: "開發者模式",
                 }
-            })
-            if (process.env.NODE_ENV === "dev") {
-                globalShortcut.register("f5", () => {
-                    this.mainWindow.reload()
-                })
-                globalShortcut.register("CommandOrControl+R", () => {
-                    this.mainWindow.reload()
-                })
+                this.mainWindow.webContents.send("/notification", o)
             }
-            this.mainWindow.once("show", () => {
-                this.addAPI()
-                if (isDevMode()) {
-                    RendererConsole.warn("electron in development mode")
-                    const o: NotificationOptions = {
-                        body: "開發者模式",
-                    }
-                    this.mainWindow.webContents.send("/notification", o)
-                }
-            })
         })
 
         app.on("before-quit", () => {
@@ -174,6 +168,11 @@ export class App {
         Menu.setApplicationMenu(mainMenu)
 
         if (!isDevMode()) {
+            if (this.mainWindow.setMenuBarVisibility) {
+                console.log("it is exist")
+            } else {
+                console.log("it is NOT exist")
+            }
             this.mainWindow.setMenuBarVisibility(false)
         }
     }
@@ -297,7 +296,8 @@ export class App {
         })
 
         ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {
-            this.mainWindow.webContents.send("/is-dev-mode", isDevMode())
+            const dev = isDevMode()
+            this.mainWindow.webContents.send("/is-dev-mode", dev)
         })
 
         this.client.on("socket", (state: SocketState) => {

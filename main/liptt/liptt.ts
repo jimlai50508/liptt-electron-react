@@ -137,23 +137,22 @@ export class LiPTT extends Client {
             return stat
         }
 
-        while (true) {
+        while (stat !== PTTState.MainPage) {
             switch (stat) {
             case PTTState.Log:
-                [, stat] = await this.Send(Control.Yes())
-                continue
+                [, stat] = await this.Send(Control.No()) // 刪除錯誤的登入紀錄
+                break
             case PTTState.AlreadyLogin:
-                [, stat] = await this.Send(Control.Yes())
-                continue
+                [, stat] = await this.Send(Control.Yes()) // 刪除重複的連線
+                break
             case PTTState.AnyKey:
                 [, stat] = await this.Send(Control.AnyKey())
-                continue
-            case PTTState.MainPage:
-                return stat
+                break
             default:
-            [, stat] = await this.WaitForNext()
+                [, stat] = await this.WaitForNext()
             }
         }
+        return stat
     }
 
     public async logout(): Promise<void> {

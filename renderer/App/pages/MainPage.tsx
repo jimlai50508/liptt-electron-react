@@ -13,7 +13,7 @@ import { Favorite } from "./Favorite"
 import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
 
-import { observable, reaction } from "mobx"
+import { observable, reaction, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "components/AppStore"
 // import QueueAnim from "rc-queue-anim"
@@ -31,6 +31,8 @@ interface ComponentState {
 @inject("socket")
 @observer
 export class MainPage extends Component<ComponentProps, ComponentState> {
+
+    private reactionDisposer: IReactionDisposer
 
     @autobind
     private onCollapse(collapsed: boolean) {
@@ -78,7 +80,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
 
-        reaction(
+        this.reactionDisposer = reaction(
             () => this.props.socket.socketState,
             (state) => {
                 if (state === SocketState.Closed) {
@@ -108,6 +110,12 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                 }, 100)
             }
         })
+    }
+
+    public componentWillUnmount() {
+        if (this.reactionDisposer) {
+            this.reactionDisposer()
+        }
     }
 
     public render() {
