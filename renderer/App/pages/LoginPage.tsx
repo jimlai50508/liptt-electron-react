@@ -93,7 +93,6 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
     }
 
     public render() {
-
         if (this.state.logined) {
             return <Redirect to="/Main" />
         }

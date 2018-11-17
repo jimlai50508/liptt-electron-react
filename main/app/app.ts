@@ -15,7 +15,7 @@ import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import * as JSONPackage from "../../../package.json"
-import { isDevMode, Debug } from "../util"
+import { isDevMode, RendererConsole } from "../utils"
 
 import { LiPTT } from "../liptt"
 import {
@@ -25,8 +25,8 @@ import {
     ArticleHeader,
     HotItem,
     PTTState,
+    SocketState,
 } from "../model"
-import { SocketState } from "../client"
 
 export class App {
 
@@ -110,7 +110,7 @@ export class App {
             this.mainWindow.once("show", () => {
                 this.addAPI()
                 if (isDevMode()) {
-                    Debug.warn("electron in development mode")
+                    RendererConsole.warn("electron in development mode")
                     const o: NotificationOptions = {
                         body: "開發者模式",
                     }
@@ -186,7 +186,7 @@ export class App {
 
     private newWindow() {
         this.mainWindow = new MainWindow(this.windowOptions)
-        Debug.window = this.mainWindow
+        RendererConsole.window = this.mainWindow
         this.mainWindow.on("close", (event: Electron.Event) => {
             if (!this.mainWindow.forceQuit) {
                 event.preventDefault()
@@ -280,7 +280,7 @@ export class App {
         ipcMain.on("/article/get-more", async (_: EventEmitter, h: ArticleHeader) => {
             await lock.wait()
             const ans = await this.client.getMoreArticleContent(h)
-            Debug.warn(ans)
+            console.log(ans)
             this.mainWindow.webContents.send("/article/get-more", ans)
             lock.signal()
         })
@@ -294,6 +294,10 @@ export class App {
 
         ipcMain.on("/terminal-snapshot", async (_: EventEmitter) => {
             this.mainWindow.webContents.send("/terminal-snapshot", this.client.GetTerminalSnapshot())
+        })
+
+        ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {
+            this.mainWindow.webContents.send("/is-dev-mode", isDevMode())
         })
 
         this.client.on("socket", (state: SocketState) => {

@@ -1,8 +1,17 @@
-import { Client, Control, SocketState } from "../client"
-import { FavoriteItem, FavoriteItemType, ArticleAbstract, ReadState, ArticleType, ArticleHeader, HotItem } from "../model"
+import {
+    FavoriteItem,
+    FavoriteItemType,
+    ArticleAbstract,
+    ReadState,
+    ArticleType,
+    ArticleHeader,
+    HotItem,
+    PTTState,
+    StateFilter,
+    SocketState,
+} from "../model"
+import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
-import { PTTState, StateFilter } from "../model/state"
-import { Debug } from "../util"
 
 export class LiPTT extends Client {
 
@@ -584,7 +593,6 @@ export class LiPTT extends Client {
                 i = c2 ? i - 1 : i
                 i = c3 ? i - 1 : i
                 const tmp = t.DeepCopy()
-                Debug.warn("addlines: ", i, match[2], "%")
                 lines.push(...tmp.Content.slice(TerminalHeight - i, TerminalHeight - 1))
             } else if (i > 0) {
                 const prevm = regex.exec(prev.GetString(23))
@@ -597,7 +605,6 @@ export class LiPTT extends Client {
                     i = Math.max(i, predict)
                 }
                 const tmp = t.DeepCopy()
-                Debug.warn("addlines: ", i, match[2], "%")
                 lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
             }
             return lines
@@ -658,7 +665,7 @@ export class LiPTT extends Client {
             } else if (indexStr !== "") {
                 index = parseInt(indexStr, 10)
                 if (!index) {
-                    Debug.error(indexStr)
+                    console.error(indexStr)
                 }
                 if (this.curIndex === Number.MAX_SAFE_INTEGER) {
                     this.curIndex = index

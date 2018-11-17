@@ -2,7 +2,7 @@ import { EventEmitter } from "events"
 import { Big5UAO } from "../encoding"
 import { Terminal } from "../model/terminal"
 import * as WebSocket from "ws"
-import { Debug } from "../util"
+import { SocketState } from "../model"
 
 /** PTT 客戶端 */
 export class Client extends EventEmitter {
@@ -130,7 +130,7 @@ export class Client extends EventEmitter {
                 // this.tcp_socket.write(buffer)
             }
         } catch (e) {
-            Debug.error("send: " + e)
+            console.error("send: " + e)
         }
     }
 
@@ -336,10 +336,4 @@ export class Client extends EventEmitter {
     set TCPPort(port: number) {
         this.port = port
     }
-}
-
-export enum SocketState {
-    Connected,
-    Closed,
-    Failed,
 }

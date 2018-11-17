@@ -1,2 +1,2 @@
-export { Client, SocketState } from "./client"
+export { Client } from "./client"
 export { Control } from "./control"

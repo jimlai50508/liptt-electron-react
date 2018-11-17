@@ -14,7 +14,6 @@
             "components/*": ["./renderer/App/components/*"],
             "model":        ["./main/model"],
             "encoding":     ["./main/encoding"],
-            "terminal":     ["./main/model/terminal"],
         },
         "baseUrl": "./"
     },

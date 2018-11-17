@@ -79,6 +79,7 @@
     "dependencies": {
         "crypto-js": "^3.1.9-1",
         "electron-devtools-installer": "^2.2.4",
+        "electron-store": "^2.0.0",
         "semaphore-async-await": "^1.5.1",
         "shelljs": "^0.8.3",
         "ws": "^6.1.0"

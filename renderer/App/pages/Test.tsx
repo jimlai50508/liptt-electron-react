@@ -5,7 +5,7 @@ import { ScrollView } from "../components/ScrollView/ScrollView"
 import { Row, Button } from "antd"
 import Semaphore from "semaphore-async-await"
 import { ArticleAbstract, ArticleHeader, PromiseIpcRenderer } from "model"
-import { Block, toString } from "terminal"
+import { Block, toString } from "model"
 import * as style from "./Test.scss"
 
 interface ComponentProps {
