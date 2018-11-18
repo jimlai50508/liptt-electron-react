@@ -134,9 +134,6 @@ const conf: Configuration = {
                 shell.rm("-rf", distPath + "/*.*")
             },
             done: () => {
-                // shell.cp("-rf",
-                //     join(rendererPath, "assets/", "locales/"),
-                //     join(distPath, "assets/"))
             },
         }),
         new MiniCssExtractPlugin({
@@ -155,7 +152,7 @@ const conf: Configuration = {
             excludeChunks: exclude,
             template: path.join("renderer", "public", name + ".ejs"),
             inject: "body",
-            favicon: path.join("renderer", "assets", "images", "favicon.ico"),
+            // favicon: path.join("renderer", "assets", "images", "favicon.ico"),
             title: titles[name],
         })
     })),

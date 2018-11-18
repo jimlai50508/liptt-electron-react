@@ -1,5 +1,4 @@
-import React from "react"
-import { Component } from "react"
+import React, { Component } from "react"
 import { Table } from "antd"
 import { ColumnProps } from "antd/lib/table"
 import { FavoriteItem, PromiseIpcRenderer } from "model"

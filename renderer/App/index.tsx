@@ -36,11 +36,10 @@ export default class extends Component<ComponentProps, ComponentState> {
 
     public render() {
         return (
+        <Provider {...this.appStore}>
             <div>
-            {this.state.isDevMode ? <MobXDevTools /> : null}
-            <Provider {...this.appStore}>
-                <div>
                 <Controller />
+                {this.state.isDevMode ? <MobXDevTools /> : null}
                 <HashRouter>
                     <Switch>
                         <Route exact path="/">
@@ -51,9 +50,8 @@ export default class extends Component<ComponentProps, ComponentState> {
                         </Route>
                     </Switch>
                 </HashRouter>
-                </div>
-            </Provider>
             </div>
+        </Provider>
         )
     }
 }

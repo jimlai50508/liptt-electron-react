@@ -12,11 +12,11 @@ import { Favorite } from "./Favorite"
 
 import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
+import { AnimePage } from "./AnimePage"
 
 import { observable, reaction, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "components/AppStore"
-// import QueueAnim from "rc-queue-anim"
 
 interface ComponentProps extends ISocket {
 
@@ -73,6 +73,8 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                 return <Test />
             case "Snapshot":
                 return <LegacyTerminal />
+            case "Anime":
+                return <AnimePage />
             default:
             return <Hot />
         }
@@ -88,7 +90,6 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                     notification.error({
                         message: "liptt 通知",
                         description: "連線已斷開",
-                        icon: <Icon type="info" style={{ color: "#108ee9" }} />,
                     })
                     setTimeout(() => {
                         this.setState((prev, _) => ({...prev, logout: true}))
@@ -142,6 +143,10 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                         <Menu.Item key="Snapshot">
                             <Icon type="border" />
                             <span>快照</span>
+                        </Menu.Item>
+                        <Menu.Item key="Anime">
+                            <Icon type="border" />
+                            <span>動畫測試</span>
                         </Menu.Item>
                         <Menu.SubMenu
                             key="sub1"
