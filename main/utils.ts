@@ -1,8 +1,7 @@
 import { app, BrowserWindow } from "electron"
 import ElectronStore = require("electron-store")
 import { User } from "./model"
-const gapi = require("gapi-client")
-const Base64 = require("js-base64").Base64
+const { google } = require("googleapis")
 
 export function isDevMode() {
     return !app.isPackaged
@@ -97,28 +96,28 @@ interface GoogleApiOAuth2TokenObject {
 
 export class Gmail {
     /// https://console.developers.google.com
+    /// https://github.com/gsuitedevs/node-samples/blob/master/gmail/quickstart/index.js
     /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
 
     public static setToken(token: string) {
-        gapi.init()
         gapi.client.setToken({access_token: token})
     }
 
-    public static getToken(): GoogleApiOAuth2TokenObject {
-        return gapi.client.getToken() as GoogleApiOAuth2TokenObject
+    public static async Load(): Promise<void> {
+        return gapi.client.load("gmail", "v1")
     }
 
     public static sendMessage(email: string, callback: () => void, userId?: string) {
 
         // Using the js-base64 library for encoding:
         // https://www.npmjs.com/package/js-base64
-        const base64EncodedEmail = Base64.encodeURI(email)
-        const request = gapi.client.gmail.users.messages.send({
-            userId,
-            resource: {
-                raw: base64EncodedEmail,
-            },
-        })
-        request.execute(callback)
+        // const base64EncodedEmail = Base64.encodeURI(email)
+        // const request = gapi.client.g.users.messages.send({
+        //     userId,
+        //     resource: {
+        //         raw: base64EncodedEmail,
+        //     },
+        // })
+        // request.execute(callback)
       }
 }

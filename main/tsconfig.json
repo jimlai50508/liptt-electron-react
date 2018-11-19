@@ -5,6 +5,7 @@
         "module": "commonjs",
         "moduleResolution": "node",
         "target": "esnext",
+        "types": ["gapi", "gapi.client.gmail"]
     },
     "include": [
         "../main/**/*",
