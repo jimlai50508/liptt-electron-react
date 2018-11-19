@@ -3,6 +3,7 @@ import autobind from "autobind-decorator"
 import { Spin } from "antd"
 import fastdom from "fastdom"
 import * as style from "./ScrollView.scss"
+import QueueAnim from "rc-queue-anim"
 
 interface ComponentProps extends HTMLAttributes<HTMLDivElement> {
     getMore: () => Promise<JSX.Element[]>
@@ -22,7 +23,6 @@ interface MousePos {
 }
 
 export class ScrollView extends Component<ComponentProps, ComponentState> {
-
     private RefScrollView: HTMLDivElement
     private RefThumb: HTMLDivElement
     private RefScrollConent: HTMLDivElement
@@ -35,7 +35,6 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     private prevTime: number
     private readonly hideDuration: number = 1500
     private readonly lazyDuration: number = 30
-    private thumbTop: number = 0
     private end: boolean = false
     private unmount: boolean = false
 
@@ -109,10 +108,11 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         const total = ch - vh
         const th = this.RefThumb.clientHeight
         if (total > 0) {
-            this.thumbTop = (vh - th) * (top / total) / vh
-            const str = (this.thumbTop * 100).toPrecision(4) + "%"
+            // this.thumbTop = (vh - th) * (top / total) / vh
+            // const str = (this.thumbTop * 100).toPrecision(4) + "%"
+            const dy = (vh - th) * (top / total)
             this.setState((prev, props) => {
-                return {...prev, thumbHide: false, thumbStyle: {top: str, height: props.thumbHeight}}
+                return {...prev, thumbHide: false, thumbStyle: {transform: `translateY(${dy}px)`, height: props.thumbHeight}}
             })
         }
     }
@@ -147,7 +147,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
             thumbHide: props.autoHideThumb,
             thumbStyle: {
                 height: "18%",
-                top: "0",
+                transform: `translateY(${0}px)`,
             },
         }
         this.init()
@@ -163,6 +163,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     }
 
     public async componentDidMount() {
+        const [c, sc] = React.useState(0)
         document.addEventListener("mousemove", this.onMouseMove as any)
         document.addEventListener("mouseup", this.onMouseUp as any)
         this.prevTime = 0
@@ -193,19 +194,19 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         document.removeEventListener("mouseup", this.onMouseUp as any)
     }
 
-    private renderContent(): JSX.Element[] | JSX.Element {
+    private renderContent(): JSX.Element[] {
 
         if (this.items.length === 0) {
             if (!this.end) {
-                return (
+                return [(
                     <div style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
                         <Spin tip="載入中..." style={{position: "absolute", width: "100%", top: "50%"}} />
-                    </div>)
+                    </div>)]
             } else {
-                return (
+                return [(
                     <div style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
                         <span style={{position: "absolute", width: "100%", top: "50%", display: "flex", justifyContent: "center", color: "#FFFFFF" }}>空空如也</span>
-                    </div>)
+                    </div>)]
             }
         }
 

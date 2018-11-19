@@ -13,6 +13,7 @@ import { Favorite } from "./Favorite"
 import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
 import { AnimePage } from "./AnimePage"
+import { CSSPage } from "./CSSPage"
 
 import { when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
@@ -75,6 +76,8 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                 return <LegacyTerminal />
             case "Anime":
                 return <AnimePage />
+            case "CSS":
+                return <CSSPage />
             default:
             return <Hot />
         }
@@ -145,6 +148,10 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                         <Menu.Item key="Anime">
                             <Icon type="border" />
                             <span>動畫測試</span>
+                        </Menu.Item>
+                        <Menu.Item key="CSS">
+                            <Icon type="border" />
+                            <span>CSS</span>
                         </Menu.Item>
                         <Menu.SubMenu
                             key="sub1"

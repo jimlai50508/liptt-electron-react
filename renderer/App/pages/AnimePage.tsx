@@ -24,6 +24,7 @@ export class AnimePage extends Component<ComponentProps, ComponentState> {
     }
 
     public render() {
+
         return (
         <div className="queue-demo">
             <p className="buttons">

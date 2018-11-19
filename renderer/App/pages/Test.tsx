@@ -23,7 +23,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
     private umount: boolean
     private prevab: ArticleAbstract
 
-    private starKey: number = -1
+    private starKey: number = Number.MAX_SAFE_INTEGER - 1
     private ih: number = 30
 
     public async componentDidMount() {
