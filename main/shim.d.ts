@@ -1,8 +1,8 @@
 declare module "*package.json" {
-    const name: string
-    const version: string
-    const license: string
-    const author: Author
+    export const name: string
+    export const version: string
+    export const license: string
+    export const author: Author
 }
 
 interface Author {

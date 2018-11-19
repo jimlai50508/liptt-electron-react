@@ -14,8 +14,8 @@ import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-insta
 import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
-import * as JSONPackage from "../../../package.json"
-import { isDevMode, RendererConsole } from "../utils"
+import { name as appName } from "../../../package.json"
+import { isDevMode, RendererConsole, Storage, LogFile } from "../utils"
 
 import { LiPTT } from "../liptt"
 import {
@@ -41,7 +41,7 @@ export class App {
     constructor() {
         this.mainWindow = null
         this.windowOptions = {
-            title: JSONPackage.name,
+            title: appName,
             show: false,
             frame: false,
             zoomToPageWidth: false,
@@ -63,17 +63,19 @@ export class App {
 
         this.client = new LiPTT()
 
-        app.setName(JSONPackage.name)
+        app.setName(appName)
         app.on("ready", () => {
             this.newWindow()
-            this.addAPI()
             this.onReady()
+            this.addAPI()
         })
         app.on("activate", () => {
             // on OS X it's common to re-create a window in the app when the
             // dock icon is clicked and there are no other windows open.
             if (this.mainWindow === null) {
                 this.newWindow()
+                this.onReady()
+                this.addAPI()
             }
         })
     }
@@ -105,6 +107,7 @@ export class App {
             })
         }
         this.mainWindow.once("show", () => {
+            LogFile.log("hello world")
             if (isDevMode()) {
                 RendererConsole.warn("electron in development mode")
                 const o: NotificationOptions = {
@@ -203,15 +206,25 @@ export class App {
     private addAPI() {
         const lock = new Semaphore(1)
 
+        ipcMain.on("/storage/load/user", async (_: EventEmitter) => {
+            await lock.wait()
+            const u = Storage.User
+            this.mainWindow.webContents.send("/storage/load/user", u)
+            lock.signal()
+        })
+
         ipcMain.on("/logout", async (_: EventEmitter) => {
             await this.client.logout()
         })
 
-        ipcMain.on("/login", async (_: EventEmitter, user: User) => {
+        ipcMain.on("/login", async (_: EventEmitter, u: User) => {
             await lock.wait()
-            if (user.username && user.password) {
-                const s = await this.client.login(user.username, user.password)
+            if (u.username && u.password) {
+                const s = await this.client.login(u.username, u.password)
                 this.mainWindow.webContents.send("/login", s)
+                if (s === PTTState.MainPage) {
+                    Storage.User = u
+                }
             } else {
                 this.mainWindow.webContents.send("/login", PTTState.WrongPassword)
             }

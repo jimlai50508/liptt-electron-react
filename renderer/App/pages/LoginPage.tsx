@@ -3,7 +3,8 @@ import { Redirect } from "react-router-dom"
 import autobind from "autobind-decorator"
 import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
-import { PromiseIpcRenderer, PTTState, StateString } from "model"
+import { ipcRenderer, EventEmitter } from "electron"
+import { PromiseIpcRenderer, User, PTTState, StateString } from "model"
 
 interface ComponentProps {
 
@@ -29,6 +30,20 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
     @autobind
     private onChangePassword(e: ChangeEvent<HTMLInputElement>) {
         this.setState({...this.state, password: e.target.value})
+    }
+
+    @autobind
+    private loadUser(u: User) {
+        this.setState((prev, _) => ({...prev, username: u.username, password: u.password}))
+    }
+
+    public componentDidMount() {
+        PromiseIpcRenderer.send<User>("/storage/load/user")
+        .then(u => {
+            if (u && u.username && u.password) {
+                this.loadUser(u)
+            }
+        })
     }
 
     constructor(prop: ComponentProps) {

@@ -14,7 +14,7 @@ import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
 import { AnimePage } from "./AnimePage"
 
-import { observable, reaction, IReactionDisposer } from "mobx"
+import { reaction, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "components/AppStore"
 
