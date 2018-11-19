@@ -3,7 +3,7 @@ import * as path from "path"
 import { TsConfigPathsPlugin } from "awesome-typescript-loader"
 import * as EventHooksPlugin from "event-hooks-webpack-plugin"
 import * as shell from "shelljs"
-const TsImportPlugin = require("ts-import-plugin")
+import TsImportPlugin = require("ts-import-plugin")
 import * as HtmlWebpackPlugin from "html-webpack-plugin"
 import * as MiniCssExtractPlugin from "mini-css-extract-plugin"
 // var nodeExternals = require('webpack-node-externals')

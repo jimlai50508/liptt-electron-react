@@ -14,7 +14,7 @@ import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
 import { AnimePage } from "./AnimePage"
 
-import { reaction, IReactionDisposer } from "mobx"
+import { when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "components/AppStore"
 
@@ -82,19 +82,17 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
 
-        this.reactionDisposer = reaction(
-            () => this.props.socket.socketState,
-            (state) => {
-                if (state === SocketState.Closed) {
-                    notification.config({placement: "bottomRight"})
-                    notification.error({
-                        message: "liptt 通知",
-                        description: "連線已斷開",
-                    })
-                    setTimeout(() => {
-                        this.setState((prev, _) => ({...prev, logout: true}))
-                    }, 100)
-                }
+        this.reactionDisposer = when(
+            () => this.props.socket.socketState === SocketState.Closed,
+            () => {
+                notification.config({placement: "bottomRight"})
+                notification.error({
+                    message: "liptt 通知",
+                    description: "連線已斷開",
+                })
+                setTimeout(() => {
+                    this.setState((prev, _) => ({...prev, logout: true}))
+                }, 100)
             },
         )
 
