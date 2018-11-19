@@ -1,6 +1,8 @@
 import { app, BrowserWindow } from "electron"
 import ElectronStore = require("electron-store")
 import { User } from "./model"
+const gapi = require("gapi-client")
+const Base64 = require("js-base64").Base64
 
 export function isDevMode() {
     return !app.isPackaged
@@ -72,4 +74,51 @@ export class LogFile {
             }
         }
     }
+}
+
+interface GoogleApiOAuth2TokenObject {
+    /**
+     * The OAuth 2.0 token. Only present in successful responses
+     */
+    access_token: string
+    /**
+     * Details about the error. Only present in error responses
+     */
+    error: string
+    /**
+     * The duration, in seconds, the token is valid for. Only present in successful responses
+     */
+    expires_in: string
+    /**
+     * The Google API scopes related to this token
+     */
+    state: string
+}
+
+export class Gmail {
+    /// https://console.developers.google.com
+    /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
+
+    public static setToken(token: string) {
+        gapi.init()
+        gapi.client.setToken({access_token: token})
+    }
+
+    public static getToken(): GoogleApiOAuth2TokenObject {
+        return gapi.client.getToken() as GoogleApiOAuth2TokenObject
+    }
+
+    public static sendMessage(email: string, callback: () => void, userId?: string) {
+
+        // Using the js-base64 library for encoding:
+        // https://www.npmjs.com/package/js-base64
+        const base64EncodedEmail = Base64.encodeURI(email)
+        const request = gapi.client.gmail.users.messages.send({
+            userId,
+            resource: {
+                raw: base64EncodedEmail,
+            },
+        })
+        request.execute(callback)
+      }
 }
