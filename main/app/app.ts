@@ -15,7 +15,7 @@ import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
-import { isDevMode, RendererConsole, Storage, LogFile } from "../utils"
+import { isDevMode, RendererConsole, Storage, LogFile, Gmail } from "../utils"
 
 import { LiPTT } from "../liptt"
 import {
@@ -63,6 +63,8 @@ export class App {
         this.client = new LiPTT()
 
         app.on("ready", async () => {
+            const gmail = new Gmail()
+            gmail.SendMail()
         })
 
         app.setName(appName)

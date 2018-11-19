@@ -1,6 +1,9 @@
 import { app, BrowserWindow } from "electron"
 import ElectronStore = require("electron-store")
 import { User } from "./model"
+import fs = require("fs")
+import path = require("path")
+const { Base64 } = require("js-base64")
 const { google } = require("googleapis")
 
 export function isDevMode() {
@@ -94,17 +97,17 @@ interface GoogleApiOAuth2TokenObject {
     state: string
 }
 
-export class Gmail {
+export class GGmail {
     /// https://console.developers.google.com
     /// https://github.com/gsuitedevs/node-samples/blob/master/gmail/quickstart/index.js
     /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
 
     public static setToken(token: string) {
-        gapi.client.setToken({access_token: token})
+        // gapi.client.setToken({access_token: token})
     }
 
     public static async Load(): Promise<void> {
-        return gapi.client.load("gmail", "v1")
+       //  return gapi.client.load("gmail", "v1")
     }
 
     public static sendMessage(email: string, callback: () => void, userId?: string) {
@@ -120,4 +123,120 @@ export class Gmail {
         // })
         // request.execute(callback)
       }
+}
+
+interface GoogleToken {
+    code?: string
+    scope?: string
+}
+
+export class Gmail {
+
+    private authWindow: BrowserWindow
+    private authToken: GoogleToken
+
+    private createAuthWindow(url: string) {
+        this.authWindow = new BrowserWindow({
+            width: 600,
+            height: 720,
+            webPreferences: {
+                nodeIntegration: true,
+                webSecurity: false,
+            },
+            autoHideMenuBar: true,
+        })
+        this.authWindow.loadURL(url)
+        this.authWindow.webContents.on("will-navigate", (event: Event, newUrl: string) => {
+            if (newUrl.startsWith("https://localhost/?")) {
+                const param = newUrl.replace("https://localhost/?", "")
+                this.authToken = {}
+                param.split("&").forEach((p) => {
+                    const a = p.split("=")
+                    if (a.length === 2) {
+                        if (a[0] === "code") {
+                            this.authToken.code = a[1]
+                        } else if (a[0] === "scope") {
+                            this.authToken.scope = a[1]
+                        }
+                    }
+                })
+                event.preventDefault()
+                console.log("token: ", this.authToken)
+                // More complex code to handle tokens goes here
+                // ...
+                this.authWindow.close()
+            }
+        })
+        this.authWindow.show()
+    }
+
+    private auth() {
+        fs.readFile(path.resolve(__dirname, "../credentials.json"), (err, content) => {
+            if (err) {
+                return console.log("Error loading client secret file:", err)
+            }
+            // Authorize a client with credentials, then call the Gmail API.
+            this.authorize(JSON.parse(content.toString()), this.sendMail)
+        })
+    }
+
+    public SendMail() {
+        fs.readFile(path.resolve(__dirname, "../../credentials.json"), (err, content) => {
+            if (err) {
+                return console.log("Error loading client secret file:", err)
+            }
+            // Authorize a client with credentials, then call the Gmail API.
+            this.authorize(JSON.parse(content.toString()), this.sendMail)
+        })
+    }
+
+    private sendMail(auth: any) {
+        return
+        const gmail = google.gmail({version: "v1", auth})
+
+        const base64EncodedEmail = Base64.encodeURI(
+'From: lightyen <lightyen0123@gmail.com>\r\n\
+To: lightyen <lightyen0123@gmail.com>\r\n\
+Subject: Hello\r\n\
+Content-Language: zh-TW\r\n\
+Content-Type: text/html; charset="utf-8"\r\n\
+\r\n\
+Hello')
+        const request = gmail.users.messages.send(
+            {
+                userId: "me",
+                resource: {
+                    raw: base64EncodedEmail,
+                },
+            }, (err: any, res: any) => {
+              if (err) {
+                return console.log("The API returned an error: " + err)
+              } else if (res.statusText === "OK") {
+                  console.log("Send Ok!!")
+              }
+          })
+        if (request) {
+            request.execute(() => {})
+        }
+    }
+
+    /** Google API 應用程式權限範圍 */
+    private readonly SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+
+    private authorize(credentials: any, callback: any) {
+        const {client_secret, client_id, redirect_uris} = credentials.web
+        const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
+
+        // Check if we have previously stored a token.
+        this.getNewToken(oAuth2Client, callback)
+        // oAuth2Client.setCredentials(JSON.parse(token))
+    }
+
+    private getNewToken(client: any, callback: any) {
+        const authUrl = client.generateAuthUrl({
+            access_type: "offline",
+            scope: this.SCOPES,
+        })
+        this.createAuthWindow(authUrl)
+    }
 }
