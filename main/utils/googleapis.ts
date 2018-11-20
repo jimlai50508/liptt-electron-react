@@ -121,10 +121,11 @@ Hello World`)
         const oAuth2Client = new OAuth2Client(cred.client_id, cred.client_secret, cred.redirect_uris[0])
 
         const authUrl = oAuth2Client.generateAuthUrl({
-            access_type: "online",
+            access_type: "offline",
             scope: this.SCOPES,
             prompt: "consent", // 不拿refresh_token, 但是這麼做每次使用者都必須重新確認權限
         })
+        console.log(authUrl)
 
         const code = this.store.get("code") as string
 
@@ -134,7 +135,6 @@ Hello World`)
             return
         }
 
-        console.log(authUrl)
         console.log(code)
         oAuth2Client.getToken(code, (err, tokens) => {
             if (err) {
@@ -142,24 +142,11 @@ Hello World`)
                 return
             }
             console.log(tokens)
-            this.store.set("tokens", JSON.stringify(tokens))
             this.store.set("code", code)
+            this.store.set("tokens", JSON.stringify(tokens))
             oAuth2Client.setCredentials(tokens)
             callback(oAuth2Client)
         })
-
-        // oAuth2Client.on("tokens", (tokens) => {
-        //     if (tokens.refresh_token) {
-        //         this.store.set("tokens", JSON.stringify(tokens))
-        //         console.log(tokens.refresh_token)
-        //     }
-        //     console.log(tokens.access_token)
-        //     oAuth2Client.setCredentials({refresh_token: token.refresh_token})
-        //     callback(oAuth2Client)
-        // })
-        // oAuth2Client.setCredentials(token)
-        // const headers = await oAuth2Client.getRequestHeaders()
-        // console.log(headers)
     }
 
     private createAuthWindow(authUrl: string, oAuth2Client: OAuth2Client, callback: (auth: OAuth2Client) => void) {
@@ -195,6 +182,8 @@ Hello World`)
                 }
                 this.store.set("code", code)
                 this.store.set("tokens", JSON.stringify(tokens))
+                console.log(code)
+                console.log(tokens)
                 oAuth2Client.setCredentials(tokens)
                 callback(oAuth2Client)
             })
