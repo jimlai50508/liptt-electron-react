@@ -63,8 +63,7 @@ export class App {
         this.client = new LiPTT()
 
         app.on("ready", async () => {
-            const gmail = new Gmail()
-            gmail.SendMail()
+
         })
 
         app.setName(appName)
@@ -72,6 +71,9 @@ export class App {
             this.newWindow()
             this.onReady()
             this.addAPI()
+
+            const g = new Gmail()
+            g.GetMailAddress()
         })
         app.on("activate", () => {
             // on OS X it's common to re-create a window in the app when the

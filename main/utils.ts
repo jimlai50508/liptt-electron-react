@@ -4,7 +4,8 @@ import { User } from "./model"
 import fs = require("fs")
 import path = require("path")
 const { Base64 } = require("js-base64")
-const { google } = require("googleapis")
+import { google as gapis } from "googleapis"
+import { OAuth2Client, Credentials } from "google-auth-library"
 
 export function isDevMode() {
     return !app.isPackaged
@@ -78,122 +79,62 @@ export class LogFile {
     }
 }
 
-interface GoogleApiOAuth2TokenObject {
-    /**
-     * The OAuth 2.0 token. Only present in successful responses
-     */
-    access_token: string
-    /**
-     * Details about the error. Only present in error responses
-     */
-    error: string
-    /**
-     * The duration, in seconds, the token is valid for. Only present in successful responses
-     */
-    expires_in: string
-    /**
-     * The Google API scopes related to this token
-     */
-    state: string
-}
-
-export class GGmail {
-    /// https://console.developers.google.com
-    /// https://github.com/gsuitedevs/node-samples/blob/master/gmail/quickstart/index.js
-    /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
-
-    public static setToken(token: string) {
-        // gapi.client.setToken({access_token: token})
-    }
-
-    public static async Load(): Promise<void> {
-       //  return gapi.client.load("gmail", "v1")
-    }
-
-    public static sendMessage(email: string, callback: () => void, userId?: string) {
-
-        // Using the js-base64 library for encoding:
-        // https://www.npmjs.com/package/js-base64
-        // const base64EncodedEmail = Base64.encodeURI(email)
-        // const request = gapi.client.g.users.messages.send({
-        //     userId,
-        //     resource: {
-        //         raw: base64EncodedEmail,
-        //     },
-        // })
-        // request.execute(callback)
-      }
-}
-
-interface GoogleToken {
-    code?: string
-    scope?: string
-}
-
+/** https://github.com/googleapis/google-api-nodejs-client#getting-started */
 export class Gmail {
 
+    /// https://developers.google.com/+/web/api/rest/latest/people/get
+    /// https://developers.google.com/+/web/api/rest/latest/people#emails
+    /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
+
+    /** Google API 應用程式權限範圍 */
+    private readonly SCOPES = [
+        "https://www.googleapis.com/auth/plus.me",
+        "https://www.googleapis.com/auth/plus.profile.emails.read",
+        "https://www.googleapis.com/auth/gmail.send",
+    ]
+
+    private store: ElectronStore
     private authWindow: BrowserWindow
-    private authToken: GoogleToken
 
-    private createAuthWindow(url: string) {
-        this.authWindow = new BrowserWindow({
-            width: 600,
-            height: 720,
-            webPreferences: {
-                nodeIntegration: true,
-                webSecurity: false,
-            },
-            autoHideMenuBar: true,
-        })
-        this.authWindow.loadURL(url)
-        this.authWindow.webContents.on("will-navigate", (event: Event, newUrl: string) => {
-            if (newUrl.startsWith("https://localhost/?")) {
-                const param = newUrl.replace("https://localhost/?", "")
-                this.authToken = {}
-                param.split("&").forEach((p) => {
-                    const a = p.split("=")
-                    if (a.length === 2) {
-                        if (a[0] === "code") {
-                            this.authToken.code = a[1]
-                        } else if (a[0] === "scope") {
-                            this.authToken.scope = a[1]
-                        }
-                    }
-                })
-                event.preventDefault()
-                console.log("token: ", this.authToken)
-                // More complex code to handle tokens goes here
-                // ...
-                this.authWindow.close()
-            }
-        })
-        this.authWindow.show()
+    constructor() {
+        this.store = new ElectronStore({ name: "tokens" })
     }
 
-    private auth() {
-        fs.readFile(path.resolve(__dirname, "../credentials.json"), (err, content) => {
-            if (err) {
-                return console.log("Error loading client secret file:", err)
+    public GetMailAddress() {
+        this.auth(this.getMailAddress)
+    }
+
+    private getMailAddress(auth: OAuth2Client) {
+        gapis.plus({version: "v1", auth}).people.get({userId: "me"})
+        .then((resp) => {
+            console.log("ID: " + resp.data.id)
+            console.log("Display Name: " + resp.data.displayName)
+            const emails = resp.data.emails
+            if (emails) {
+                emails.forEach(addr => console.log(addr))
             }
-            // Authorize a client with credentials, then call the Gmail API.
-            this.authorize(JSON.parse(content.toString()), this.sendMail)
+        })
+        .catch((e) => {
+            if (e.message) {
+                console.error(e.message)
+            } else {
+                console.error(e)
+            }
         })
     }
 
-    public SendMail() {
+    private auth(callback: (auth: OAuth2Client) => void) {
         fs.readFile(path.resolve(__dirname, "../../credentials.json"), (err, content) => {
             if (err) {
                 return console.log("Error loading client secret file:", err)
             }
             // Authorize a client with credentials, then call the Gmail API.
-            this.authorize(JSON.parse(content.toString()), this.sendMail)
+            this.authorize(JSON.parse(content.toString()), callback)
         })
     }
 
-    private sendMail(auth: any) {
+    private sendMail(auth: OAuth2Client) {
         return
-        const gmail = google.gmail({version: "v1", auth})
-
         const base64EncodedEmail = Base64.encodeURI(
 'From: lightyen <lightyen0123@gmail.com>\r\n\
 To: lightyen <lightyen0123@gmail.com>\r\n\
@@ -202,10 +143,10 @@ Content-Language: zh-TW\r\n\
 Content-Type: text/html; charset="utf-8"\r\n\
 \r\n\
 Hello')
-        const request = gmail.users.messages.send(
+        gapis.gmail({version: "v1", auth}).users.messages.send(
             {
                 userId: "me",
-                resource: {
+                requestBody: {
                     raw: base64EncodedEmail,
                 },
             }, (err: any, res: any) => {
@@ -214,29 +155,102 @@ Hello')
               } else if (res.statusText === "OK") {
                   console.log("Send Ok!!")
               }
-          })
-        if (request) {
-            request.execute(() => {})
+            },
+        )
+    }
+
+    private authorize(credentials: any, callback: (auth: OAuth2Client) => void) {
+        const { client_secret, client_id, redirect_uris } = credentials.web
+        const oAuth2Client = new gapis.auth.OAuth2(client_id, client_secret, redirect_uris[0])
+
+        const token = this.store.get("gapis")
+        if (!token) {
+            this.getNewToken(oAuth2Client, callback)
+            return
         }
+        oAuth2Client.setCredentials(token)
+        callback(oAuth2Client)
+        // oAuth2Client.credentials = {...oAuth2Client.credentials, refresh_token: token.refresh_token}
+        // oAuth2Client.refreshAccessToken((e, cred) => {
+        //     if (e) {
+        //         console.log(e)
+        //         return
+        //     }
+        //     // save new token
+        //     this.store.set("gapis", JSON.stringify(cred))
+        //     oAuth2Client.setCredentials(cred)
+        //     callback(oAuth2Client)
+        // })
     }
 
-    /** Google API 應用程式權限範圍 */
-    private readonly SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
-
-    private authorize(credentials: any, callback: any) {
-        const {client_secret, client_id, redirect_uris} = credentials.web
-        const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0])
-
-        // Check if we have previously stored a token.
-        this.getNewToken(oAuth2Client, callback)
-        // oAuth2Client.setCredentials(JSON.parse(token))
-    }
-
-    private getNewToken(client: any, callback: any) {
-        const authUrl = client.generateAuthUrl({
+    private getNewToken(oAuth2Client: OAuth2Client, callback: (auth: OAuth2Client) => void) {
+        const authUrl = oAuth2Client.generateAuthUrl({
             access_type: "offline",
             scope: this.SCOPES,
         })
-        this.createAuthWindow(authUrl)
+        this.createAuthWindow(authUrl, oAuth2Client, callback)
+    }
+
+    private createAuthWindow(authUrl: string, oAuth2Client: OAuth2Client, callback: (auth: OAuth2Client) => void) {
+        this.authWindow = new BrowserWindow({
+            width: 600,
+            height: 720,
+            icon: path.resolve(__dirname, "../../resources/icons/256x256.png"),
+            webPreferences: {
+                nodeIntegration: true,
+                webSecurity: false,
+            },
+            autoHideMenuBar: true,
+        })
+        this.authWindow.webContents.on("will-navigate", (event: Event, newUrl: string) => {
+            if (!newUrl.startsWith("https://localhost/?")) {
+                console.log("will-native:", newUrl)
+                return
+            }
+            event.preventDefault()
+            const param = newUrl.replace("https://localhost/?", "")
+            let code = ""
+            let scope = ""
+            param.split("&").forEach((p) => {
+                const a = p.split("=")
+                if (a.length === 2) {
+                    if (a[0] === "code") {
+                        code = a[1]
+                    } else if (a[0] === "scope") {
+                        scope = a[1]
+                    }
+                }
+            })
+            // More complex code to handle tokens goes here
+            this.authWindow.close()
+            oAuth2Client.getToken(code, (err, token) => {
+                if (err) {
+                    console.error("Error retrieving access token", err)
+                }
+                // save token
+                this.store.set("gapis", JSON.stringify(token))
+
+                oAuth2Client.setCredentials(token)
+                // oAuth2Client.credentials = {...oAuth2Client.credentials, refresh_token: token.refresh_token}
+                // // refresh the token
+                // oAuth2Client.refreshAccessToken((e, cred) => {
+                //     if (e) {
+                //         console.log(e)
+                //         return
+                //     }
+                //     // save new token
+                //     this.store.set("gapis", JSON.stringify(cred))
+                //     oAuth2Client.setCredentials(cred)
+                //     callback(oAuth2Client)
+                // })
+                callback(oAuth2Client)
+            })
+        })
+        this.authWindow.on("closed", () => {
+            this.authWindow = null
+        })
+        console.log(authUrl)
+        this.authWindow.loadURL(authUrl)
+        this.authWindow.show()
     }
 }
