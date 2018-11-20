@@ -23,7 +23,7 @@ export class Client extends EventEmitter {
     private timeout: NodeJS.Timeout
     /** timeout 忍受時間(毫秒) */
     private timeoutDuration: number
-    private readonly defaultTimeoutDuration: number = 1000
+    private readonly defaultTimeoutDuration: number = 800
 
     private isconnected: boolean
 
@@ -152,10 +152,8 @@ export class Client extends EventEmitter {
         if (this.timeout) {
             clearTimeout(this.timeout)
             this.timeout = null
-        } else {
-            // this.timeoutDuration = this.timeoutDuration / 2
-            // this.timeoutDuration = this.timeoutDuration < this.defaultTimeoutDuration ?
-            // this.defaultTimeoutDuration : this.timeoutDuration
+            this.timeoutDuration = (this.timeoutDuration / 2) < this.defaultTimeoutDuration ?
+            this.defaultTimeoutDuration : (this.timeoutDuration / 2)
         }
 
         if (data.length < 1024) { // 傳送完成
@@ -164,7 +162,6 @@ export class Client extends EventEmitter {
             this.timeout = setTimeout(() => {
                 this.emit("Updated", this.terminal)
                 this.timeoutDuration = this.timeoutDuration * 2
-                clearTimeout(this.timeout)
                 this.timeout = null
             }, this.timeoutDuration)
         }
