@@ -72,8 +72,8 @@ export class App {
             this.onReady()
             this.addAPI()
 
-            const g = new Gmail()
-            g.GetMailAddress()
+            // const g = new Gmail()
+            // g.GetMailAddress()
         })
         app.on("activate", () => {
             // on OS X it's common to re-create a window in the app when the

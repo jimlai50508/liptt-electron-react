@@ -81,6 +81,8 @@ export class LiPTT extends Client {
                 return PTTState.WebSocketFailed
             case SocketState.Closed:
                 return PTTState.WebSocketClosed
+            case SocketState.TelnetNotSupported:
+                return PTTState.WebSocketFailed
             default:
                 return PTTState.None
             }

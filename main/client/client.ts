@@ -19,7 +19,11 @@ export class Client extends EventEmitter {
     private port: number
     private security: boolean
     private ws: WebSocket
+    /** 當websocket發生timeout, 則當作傳送完成 */
     private timeout: NodeJS.Timeout
+    /** timeout 忍受時間(毫秒) */
+    private timeoutDuration: number
+    private readonly defaultTimeoutDuration: number = 1000
 
     private isconnected: boolean
 
@@ -38,30 +42,34 @@ export class Client extends EventEmitter {
             if (this.security) {
                 const ws = new WebSocket("wss://ws.ptt.cc/bbs", {
                     origin: "https://www.ptt.cc",
+                    maxPayload: 1024,
                 })
-                if (ws) {
-                    ws.onopen = (e) => {
-                        this.ws = e.target
-                        this.isconnected = true
-                        resolve(SocketState.Connected)
-                        this.emit("socket", SocketState.Connected)
-                    }
-                    ws.onclose = (e) => {
+
+                if (!ws) {
+                    resolve(SocketState.Failed)
+                    return
+                }
+
+                ws.onopen = (e) => {
+                    this.ws = e.target
+                    this.isconnected = true
+                    this.timeoutDuration = this.defaultTimeoutDuration
+                    resolve(SocketState.Connected)
+                    this.emit("socket", SocketState.Connected)
+                    ws.onclose = (a) => {
                         this.isconnected = false
                         resolve(SocketState.Closed)
                         this.emit("socket", SocketState.Closed)
                     }
-                    ws.onmessage = (e) => {
-                        this.read(e.data as Buffer)
+                    ws.onmessage = (a) => {
+                        this.read(a.data as Buffer)
                     }
-                    ws.on("error", () => {
-                        resolve(SocketState.Failed)
-                    })
-                } else {
-                    resolve(SocketState.Failed)
                 }
+                ws.on("error", (a) => {
+                    resolve(SocketState.Failed)
+                })
             } else {
-                resolve(SocketState.Failed)
+                resolve(SocketState.TelnetNotSupported)
             }
         })
     }
@@ -144,13 +152,21 @@ export class Client extends EventEmitter {
         if (this.timeout) {
             clearTimeout(this.timeout)
             this.timeout = null
-        }
-        if (data.length < 1024) {
-            this.emit("Updated", this.terminal)
         } else {
+            // this.timeoutDuration = this.timeoutDuration / 2
+            // this.timeoutDuration = this.timeoutDuration < this.defaultTimeoutDuration ?
+            // this.defaultTimeoutDuration : this.timeoutDuration
+        }
+
+        if (data.length < 1024) { // 傳送完成
+            this.emit("Updated", this.terminal)
+        } else { // 可能完成可能沒完成
             this.timeout = setTimeout(() => {
                 this.emit("Updated", this.terminal)
-            }, 1000)
+                this.timeoutDuration = this.timeoutDuration * 2
+                clearTimeout(this.timeout)
+                this.timeout = null
+            }, this.timeoutDuration)
         }
     }
 

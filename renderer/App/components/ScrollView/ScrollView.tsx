@@ -163,7 +163,6 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     }
 
     public async componentDidMount() {
-        const [c, sc] = React.useState(0)
         document.addEventListener("mousemove", this.onMouseMove as any)
         document.addEventListener("mouseup", this.onMouseUp as any)
         this.prevTime = 0
