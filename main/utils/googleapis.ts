@@ -8,6 +8,8 @@ const { Base64 } = require("js-base64")
 import { google as gapis } from "googleapis"
 import { OAuth2Client, Credentials } from "google-auth-library"
 
+/// https://console.developers.google.com
+
 interface ICredentials {
     client_id?: string
     project_id?: string
@@ -24,6 +26,7 @@ const APP_CREDENTIALS_PATH = path.resolve(__dirname, "../../../resources/credent
 /** https://github.com/googleapis/google-api-nodejs-client#getting-started */
 export class Gmail {
 
+    /// https://myaccount.google.com/permissions 第三方應用程式權限
     /// https://developers.google.com/+/web/api/rest/latest/people/get
     /// https://developers.google.com/+/web/api/rest/latest/people#emails
     /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
@@ -65,6 +68,37 @@ export class Gmail {
         })
     }
 
+    public SendTestMail() {
+        this.auth(this.sendMail)
+    }
+
+    private sendMail(auth: OAuth2Client) {
+        const name = "lightyen"
+        const email = "lightyen0123@gmail.com"
+        const base64EncodedEmail = Base64.encodeURI(
+`From: ${name} <${email}>\r\n\
+To: ${name} <${email}>\r\n\
+Subject: Test Gmail API\r\n\
+Content-Language: zh-TW\r\n\
+Content-Type: text/html; charset="utf-8"\r\n\
+\r\n\
+Hello World`)
+        gapis.gmail({version: "v1", auth}).users.messages.send(
+            {
+                userId: "me",
+                requestBody: {
+                    raw: base64EncodedEmail,
+                },
+            }, (err: any, res: any) => {
+                if (err) {
+                    return console.error("The API returned an error: " + err)
+                } else if (res.statusText === "OK") {
+                    console.log("Send Ok!!")
+                }
+            },
+        )
+    }
+
     private auth(callback: (auth: OAuth2Client) => void) {
         fs.readFile(APP_CREDENTIALS_PATH, async (err, content) => {
             if (err) {
@@ -79,50 +113,28 @@ export class Gmail {
         })
     }
 
-    private sendMail(auth: OAuth2Client) {
-        return
-        const base64EncodedEmail = Base64.encodeURI(
-'From: lightyen <lightyen0123@gmail.com>\r\n\
-To: lightyen <lightyen0123@gmail.com>\r\n\
-Subject: Hello\r\n\
-Content-Language: zh-TW\r\n\
-Content-Type: text/html; charset="utf-8"\r\n\
-\r\n\
-Hello')
-        gapis.gmail({version: "v1", auth}).users.messages.send(
-            {
-                userId: "me",
-                requestBody: {
-                    raw: base64EncodedEmail,
-                },
-            }, (err: any, res: any) => {
-              if (err) {
-                return console.error("The API returned an error: " + err)
-              } else if (res.statusText === "OK") {
-                  console.log("Send Ok!!")
-              }
-            },
-        )
-    }
-
     private async authorize(cred: ICredentials, callback: (auth: OAuth2Client) => void) {
         if (!cred.redirect_uris) {
             console.error("Redirect Uris must be set.")
             return
         }
         const oAuth2Client = new OAuth2Client(cred.client_id, cred.client_secret, cred.redirect_uris[0])
+
         const authUrl = oAuth2Client.generateAuthUrl({
-            access_type: "offline",
+            access_type: "online",
             scope: this.SCOPES,
+            prompt: "consent", // 不拿refresh_token, 但是這麼做每次使用者都必須重新確認權限
         })
 
         const code = this.store.get("code") as string
-        // first authorization
-        if (!code) {
+
+        if (true) {
+            // first authorization
             this.createAuthWindow(authUrl, oAuth2Client, callback)
             return
         }
 
+        console.log(authUrl)
         console.log(code)
         oAuth2Client.getToken(code, (err, tokens) => {
             if (err) {
@@ -181,8 +193,6 @@ Hello')
                 if (err) {
                     console.error("Error retrieving access token", err)
                 }
-                console.log(code)
-                console.log(tokens)
                 this.store.set("code", code)
                 this.store.set("tokens", JSON.stringify(tokens))
                 oAuth2Client.setCredentials(tokens)
