@@ -1,6 +1,7 @@
 import React, { Component } from "react"
 import { Button } from "antd"
 import * as style from "./CSSPage.scss"
+import { ipcRenderer } from "electron"
 
 interface ComponentProps {
 
@@ -17,11 +18,15 @@ export class CSSPage extends Component<ComponentProps, ComponentState> {
 
     }
 
+    private sendTest() {
+        ipcRenderer.send("/google/send-mail")
+    }
+
     public render() {
 
         return (
         <div>
-            <Button className={style.but}>1231232</Button>
+            <Button className={style.but} onClick={this.sendTest}>Send Test Mail</Button>
         </div>
         )
     }

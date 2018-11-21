@@ -15,7 +15,7 @@ import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
-import { isDevMode, RendererConsole, Storage, LogFile, Gmail } from "../utils"
+import { isDevMode, RendererConsole, Storage, LogFile, Google } from "../utils"
 
 import { LiPTT } from "../liptt"
 import {
@@ -71,9 +71,6 @@ export class App {
             this.newWindow()
             this.onReady()
             this.addAPI()
-
-            const g = new Gmail()
-            g.GetMailAddress()
         })
         app.on("activate", () => {
             // on OS X it's common to re-create a window in the app when the
@@ -312,6 +309,11 @@ export class App {
 
         ipcMain.on("/terminal-snapshot", async (_: EventEmitter) => {
             this.mainWindow.webContents.send("/terminal-snapshot", this.client.GetTerminalSnapshot())
+        })
+
+        ipcMain.on("/google/send-mail", async (_: EventEmitter) => {
+            const g = new Google()
+            g.SendTestMail()
         })
 
         ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {

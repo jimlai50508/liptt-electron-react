@@ -38,6 +38,8 @@ interface ComponentState {
 
 export class Hot extends Component<ComponentProps, ComponentState> {
 
+    private umount: boolean
+
     constructor(prop: ComponentProps) {
         super(prop)
         this.state = {
@@ -49,11 +51,14 @@ export class Hot extends Component<ComponentProps, ComponentState> {
     public componentDidMount() {
         PromiseIpcRenderer.send<HotItem[]>("/hot")
         .then((items) => {
-            this.setState((prev, _) => ({...prev, data: items, loading: false}))
+            if (!this.umount) {
+                this.setState((prev, _) => ({...prev, data: items, loading: false}))
+            }
         })
     }
 
     public componentWillUnmount() {
+        this.umount = true
     }
 
     public render() {

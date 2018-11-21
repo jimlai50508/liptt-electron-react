@@ -24,7 +24,7 @@ const ICON_PATH = path.resolve(__dirname, "../../../resources/icons/256x256.png"
 const APP_CREDENTIALS_PATH = path.resolve(__dirname, "../../../resources/credentials.json")
 
 /** https://github.com/googleapis/google-api-nodejs-client#getting-started */
-export class Gmail {
+export class Google {
 
     /// https://myaccount.google.com/permissions 第三方應用程式權限
     /// https://developers.google.com/+/web/api/rest/latest/people/get
@@ -38,11 +38,13 @@ export class Gmail {
         "https://www.googleapis.com/auth/gmail.send",
     ]
 
+    private readonly storeName = "googleTokens"
+
     private store: ElectronStore
     private authWindow: BrowserWindow
 
     constructor() {
-        this.store = new ElectronStore({ name: "tokens" })
+        this.store = new ElectronStore({ name: this.storeName })
     }
 
     public GetMailAddress() {
@@ -52,11 +54,10 @@ export class Gmail {
     private getMailAddress(auth: OAuth2Client) {
         gapis.plus({version: "v1", auth}).people.get({userId: "me"})
         .then((resp) => {
-            console.log("ID: " + resp.data.id)
-            console.log("Display Name: " + resp.data.displayName)
+            console.log("Name: " + resp.data.displayName)
             const emails = resp.data.emails
-            if (emails) {
-                emails.forEach(addr => console.log(addr))
+            if (emails && emails[0]) {
+                console.log(emails[0])
             }
         })
         .catch((e) => {
@@ -118,34 +119,38 @@ Hello World`)
             console.error("Redirect Uris must be set.")
             return
         }
+
         const oAuth2Client = new OAuth2Client(cred.client_id, cred.client_secret, cred.redirect_uris[0])
 
         const authUrl = oAuth2Client.generateAuthUrl({
             access_type: "offline",
             scope: this.SCOPES,
-            prompt: "consent", // 不拿refresh_token, 但是這麼做每次使用者都必須重新確認權限
+            prompt: "consent", // 顯示確認權限的按鈕
         })
-        console.log(authUrl)
 
         const code = this.store.get("code") as string
-
-        if (true) {
-            // first authorization
+        if (!code) {
+            // first authorization: 當使用者Accept之後，會取得access_token和refresh_token
             this.createAuthWindow(authUrl, oAuth2Client, callback)
             return
         }
 
-        console.log(code)
-        oAuth2Client.getToken(code, (err, tokens) => {
-            if (err) {
-                console.error("Error retrieving access token:", err.message)
-                return
-            }
-            console.log(tokens)
-            this.store.set("code", code)
+        const oldTokens = JSON.parse(this.store.get("tokens")) as Credentials
+
+        oAuth2Client.on("tokens", ((tokens: Credentials) => {
+            tokens.refresh_token = oldTokens.refresh_token
             this.store.set("tokens", JSON.stringify(tokens))
             oAuth2Client.setCredentials(tokens)
             callback(oAuth2Client)
+        }).bind(this))
+
+        oAuth2Client.setCredentials({ refresh_token: oldTokens.refresh_token })
+        // refresh the access_token
+        oAuth2Client.getRequestHeaders(authUrl)
+        .then(headers => {
+        })
+        .catch(e => {
+            console.error(e)
         })
     }
 
