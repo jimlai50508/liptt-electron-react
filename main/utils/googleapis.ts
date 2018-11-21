@@ -47,7 +47,6 @@ export class Google {
     private readonly storeName = "googleTokens"
     private profile: UserProfile
     private store: ElectronStore
-    private authWindow: BrowserWindow
 
     constructor() {
         this.store = new ElectronStore({ name: this.storeName })
@@ -223,8 +222,6 @@ ${msg}`)
                 window.close()
             })
             window.on("closed", () => {
-                this.authWindow = null
-
                 if (!qs) {
                     rs("")
                     return
