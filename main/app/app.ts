@@ -313,7 +313,11 @@ export class App {
 
         ipcMain.on("/google/send-mail", async (_: EventEmitter) => {
             const g = new Google()
-            await g.SendMailTo("Test google API", "lightyen", "lightyen0123@gmail.com", "Hello world")
+            try {
+                await g.SendMailTo("cd920210@yahoo.com.tw", "陳哈希", "Test google API", "Hello world", true)
+            } catch (err) {
+                console.error(err)
+            }
         })
 
         ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {

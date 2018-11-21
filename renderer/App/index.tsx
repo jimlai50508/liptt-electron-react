@@ -2,12 +2,11 @@ import React, { Component } from "react"
 import { HashRouter } from "react-router-dom"
 import { Switch, Route } from "react-router-dom"
 import { MainPage, LoginPage } from "./pages"
-
-import { Provider } from "mobx-react"
+import { Provider, inject } from "mobx-react"
+import { PromiseIpcRenderer } from "model"
 import { AppStore } from "components/AppStore"
 import MobXDevTools from "mobx-react-devtools"
 import Controller from "components/Controller"
-import { PromiseIpcRenderer } from "model"
 
 interface ComponentProps {
 }
@@ -27,11 +26,7 @@ export default class extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<boolean>("/is-dev-mode")
-        .then((mode) => {
-            this.appStore.setDevMode(mode)
-            this.setState({isDevMode: mode})
-        })
+        PromiseIpcRenderer.send<boolean>("/is-dev-mode").then(mode => this.setState({isDevMode: mode}))
     }
 
     public render() {

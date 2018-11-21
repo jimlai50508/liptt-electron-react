@@ -38,6 +38,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
+        console.log("login Page")
         PromiseIpcRenderer.send<User>("/storage/load/user")
         .then(u => {
             if (u && u.username && u.password) {

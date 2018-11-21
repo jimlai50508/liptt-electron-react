@@ -1,7 +1,6 @@
 import React, { Component } from "react"
 import { ipcRenderer, EventEmitter } from "electron"
 import { SocketState } from "model"
-
 import { action } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "./AppStore"
@@ -47,7 +46,7 @@ export default class extends Component<ComponentProps, ComponentState> {
             } else if (Notification.permission !== "denied") {
                 Notification.requestPermission((permission) => {
                     if (permission === "granted") {
-                    const noti = new Notification("liptt", options)
+                        const noti = new Notification("liptt", options)
                     }
                 })
             }

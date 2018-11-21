@@ -21,9 +21,14 @@ interface ICredentials {
     redirect_uris?: string[]
 }
 
+interface Email {
+    type?: string
+    value?: string
+}
+
 interface UserProfile {
     name?: string
-    emails?: string[]
+    emails?: Email[]
 }
 
 const ICON_PATH = path.resolve(__dirname, "../../../resources/icons/256x256.png")
@@ -78,29 +83,56 @@ export class Google {
         }
     }
 
-    public async SendMailTo(subject: string, nick: string, email: string, message: string): Promise<void> {
+    /**
+     * @param mailto 收件人
+     * @param alias 收件人暱稱
+     * @param subject 標題
+     * @param content 內容
+     * @param html 內容是否為HTML格式
+     */
+    public async SendMailTo(mailto: string, alias: string, subject: string, content: string, html: boolean): Promise<void> {
         try {
             if (!this.profile) {
                 await this.GetUserProfile()
             }
             const client = await this.getOAuth2Client()
-            await this.sendMail(client, subject, nick, email, message)
+            await this.sendMail(client, mailto, alias, subject, content, html)
         } catch (e) {
             throw new Error(e)
         }
     }
 
-    private async sendMail(client: OAuth2Client, subject: string, toNick: string, to: string, msg: string): Promise<void> {
+    private async sendMail(client: OAuth2Client, mailto: string, alias: string, subject: string, content: string, html: boolean): Promise<void> {
+
         const name = this.profile.name
-        const email = this.profile.emails[0]
-        const base64EncodedEmail = Base64.encodeURI(
-`From: ${name} <${email}>\r\n\
-To: ${to} <${toNick}>\r\n\
-Subject: ${subject}\r\n\
-Content-Language: zh-TW\r\n\
-Content-Type: text/html; charset="utf-8"\r\n\
-\r\n\
-${msg}`)
+        const email = this.profile.emails[0].value
+
+        const gmail = gapis.gmail({version: "v1", auth: client})
+
+        const rawHeader =
+        `From: =?utf-8?B?${Base64.encodeURI(name)}?= <${email}>\r\n` +
+        `To: =?utf-8?B?${Base64.encodeURI(alias)}?= <${mailto}>\r\n` +
+        `Subject: =?utf-8?B?${Base64.encodeURI(subject)}?=\r\n` +
+        `Content-Language: ${"zh-TW"}\r\n` +
+        `Content-Type: text/plain; charset=utf-8\r\n` +
+        "\r\n"
+
+        try {
+            const resp = await gmail.users.messages.send({
+                userId: "me",
+                requestBody: {
+                    raw: Base64.encodeURI(rawHeader + content),
+                },
+            })
+            if (resp.statusText !== "OK") {
+                console.error(resp)
+            }
+        } catch (e) {
+            throw new Error(e)
+        }
+    }
+
+    private async sendSMTP(client: OAuth2Client, smtpMsg: string): Promise<void> {
 
         const gmail = gapis.gmail({version: "v1", auth: client})
 
@@ -108,7 +140,7 @@ ${msg}`)
             const resp = await gmail.users.messages.send({
                 userId: "me",
                 requestBody: {
-                    raw: base64EncodedEmail,
+                    // raw: Base64.encodeURI(smtpMsg),
                 },
             })
             if (resp.statusText !== "OK") {
