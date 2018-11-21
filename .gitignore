@@ -2,6 +2,7 @@ dist
 node_modules
 release
 package-lock.json
+./resources/credentials.json
 yarn.lock
 .webpack/*.js
 npm-debug.log

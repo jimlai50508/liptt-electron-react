@@ -1,12 +1,13 @@
-import ElectronStore = require("electron-store")
 import { BrowserWindow } from "electron"
+import ElectronStore = require("electron-store")
 import fs = require("fs")
 import path = require("path")
 import url = require("url")
 import querystring = require("querystring")
-const { Base64 } = require("js-base64")
+import { promisify } from "util"
+import { Base64 } from "js-base64"
 import { google as gapis } from "googleapis"
-import { OAuth2Client, Credentials } from "google-auth-library"
+import { OAuth2Client, Credentials, auth } from "google-auth-library"
 
 /// https://console.developers.google.com
 
@@ -53,66 +54,44 @@ export class Google {
     }
 
     public async GetUserProfile(): Promise<UserProfile> {
-        return new Promise<UserProfile>((rs, rj) => {
-            this.getOAuth2Client()
-            .then(client => {
-                this.getUserProfile(client)
-                .then(u => rs(u))
-                .catch(e => rj(e))
-            })
-            .catch(e => {
-                rj(e)
-            })
-        })
-
+        try {
+            const client = await this.getOAuth2Client()
+            const profile = this.getUserProfile(client)
+            return profile
+        } catch (e) {
+            throw new Error(e)
+        }
     }
 
-    private async getUserProfile(auth: OAuth2Client): Promise<UserProfile> {
-        return new Promise<UserProfile>((rs, rj) => {
-            gapis.plus({version: "v1", auth}).people.get({userId: "me"})
-            .then((resp) => {
-                const user: UserProfile = {}
-                user.name = resp.data.displayName
-                const emails = resp.data.emails
-                if (emails) {
-                    user.emails = resp.data.emails
-                }
-                this.profile = user
-                rs(user)
-            })
-            .catch((e) => {
-                if (e.message) {
-                    rj(e.message)
-                } else {
-                    rj(e)
-                }
-            })
-        })
+    private async getUserProfile(client: OAuth2Client): Promise<UserProfile> {
+        const gplus = gapis.plus({version: "v1", auth: client})
+
+        try {
+            const resp = await gplus.people.get({userId: "me"})
+            const user: UserProfile = {
+                name: resp.data.displayName,
+                emails: resp.data.emails,
+            }
+            this.profile = user
+            return user
+        } catch (e) {
+            throw new Error(e)
+        }
     }
 
     public async SendMailTo(subject: string, nick: string, email: string, message: string): Promise<void> {
-
-        return new Promise<void>((rs, rj) => {
-
+        try {
             if (!this.profile) {
-                this.GetUserProfile()
-                .then(u => {
-                    this.getOAuth2Client()
-                    .then(client => {
-                        this.sendMail(client, subject, nick, email, message)
-                        .then(() => {rs()})
-                        .catch(e => rj(e))
-                    })
-                    .catch(e => {
-                        rj(e)
-                    })
-                })
-                .catch(e => rj(e))
+                await this.GetUserProfile()
             }
-        })
+            const client = await this.getOAuth2Client()
+            await this.sendMail(client, subject, nick, email, message)
+        } catch (e) {
+            throw new Error(e)
+        }
     }
 
-    private async sendMail(auth: OAuth2Client, subject: string, toNick: string, to: string, msg: string): Promise<void> {
+    private async sendMail(client: OAuth2Client, subject: string, toNick: string, to: string, msg: string): Promise<void> {
         const name = this.profile.name
         const email = this.profile.emails[0]
         const base64EncodedEmail = Base64.encodeURI(
@@ -124,89 +103,79 @@ Content-Type: text/html; charset="utf-8"\r\n\
 \r\n\
 ${msg}`)
 
-        return new Promise<void>((rs, rj) => {
-            gapis.gmail({version: "v1", auth}).users.messages.send(
-                {
-                    userId: "me",
-                    requestBody: {
-                        raw: base64EncodedEmail,
-                    },
-                }, (err: Error, res: any) => {
-                    if (err) {
-                        rj("The API returned an error: " + err)
-                        return
-                    } else if (res.statusText === "OK") {
-                        rs()
-                    }
+        const gmail = gapis.gmail({version: "v1", auth: client})
+
+        try {
+            const resp = await gmail.users.messages.send({
+                userId: "me",
+                requestBody: {
+                    raw: base64EncodedEmail,
                 },
-            )
-        })
+            })
+            if (resp.statusText !== "OK") {
+                console.error(resp)
+            }
+        } catch (e) {
+            throw new Error(e)
+        }
     }
 
     private async getOAuth2Client(): Promise<OAuth2Client> {
-        return new Promise<OAuth2Client>((rs, rj) => {
-            fs.readFile(APP_CREDENTIALS_PATH, async (err, content) => {
-                if (err) {
-                    rj("Error loading app credentials file: " + err)
-                    return
-                }
-                const json = JSON.parse(content.toString())
-                if (!json) {
-                    rj("Error Unmarshal app credentials file:" + APP_CREDENTIALS_PATH)
-                    return
-                }
-                if (!json.web) {
-                    rj("Error Format app credentials file:" + APP_CREDENTIALS_PATH)
-                    return
-                }
-                this.getAuth(json.web as ICredentials)
-                .then(c => rs(c))
-                .catch(e => rj(e))
-            })
-        })
+        const readFile = promisify(fs.readFile)
+
+        try {
+            const content = await readFile(APP_CREDENTIALS_PATH)
+            const json = JSON.parse(content.toString())
+            if (!json) {
+                throw new Error("Error Unmarshal app credentials file:" + APP_CREDENTIALS_PATH)
+            }
+            if (!json.web) {
+                throw new Error("Error Format app credentials file:" + APP_CREDENTIALS_PATH)
+            }
+            const client = await this.getAuth(json.web as ICredentials)
+            return client
+        } catch (err) {
+            throw new Error(err)
+        }
     }
 
     private async getAuth(credentials: ICredentials): Promise<OAuth2Client> {
+
+        if (!credentials.redirect_uris) {
+            throw new Error("Redirect Uris must be set.")
+        }
+
+        const oAuth2Client = new OAuth2Client(
+            credentials.client_id,
+            credentials.client_secret,
+            credentials.redirect_uris[0])
+
+        const authUrl = oAuth2Client.generateAuthUrl({
+            access_type: "offline",
+            scope: this.SCOPES,
+            prompt: "consent", // 顯示確認權限的按鈕
+        })
+
+        const code = this.store.get("code") as string
+
+        if (!code) {
+            // first authorization: 當使用者Accept之後，會取得access_token和refresh_token
+            try {
+                const c = await this.openAuthWindow(authUrl, oAuth2Client)
+                const resp = await oAuth2Client.getToken(c)
+                if (resp.tokens) {
+                    this.store.set("code", c)
+                    this.store.set("tokens", JSON.stringify(resp.tokens))
+                    oAuth2Client.setCredentials(resp.tokens)
+                    return oAuth2Client
+                }
+                throw new Error("Error retrieving access token")
+            } catch (e) {
+                throw new Error(e)
+            }
+        }
+
         return new Promise<OAuth2Client>((rs, rj) => {
-            if (!credentials.redirect_uris) {
-                rj("Redirect Uris must be set.")
-                return
-            }
-
-            const oAuth2Client = new OAuth2Client(
-                credentials.client_id,
-                credentials.client_secret,
-                credentials.redirect_uris[0])
-
-            const authUrl = oAuth2Client.generateAuthUrl({
-                access_type: "offline",
-                scope: this.SCOPES,
-                prompt: "consent", // 顯示確認權限的按鈕
-            })
-
-            const code = this.store.get("code") as string
-            if (!code) {
-                // first authorization: 當使用者Accept之後，會取得access_token和refresh_token
-                this.openAuthWindow(authUrl, oAuth2Client)
-                .then(c => {
-                    if (!c) {
-                        return
-                    }
-                    oAuth2Client.getToken(c, (err, tokens) => {
-                        if (err) {
-                            rj("Error retrieving access token: " + err)
-                            return
-                        }
-                        this.store.set("code", c)
-                        this.store.set("tokens", JSON.stringify(tokens))
-                        oAuth2Client.setCredentials(tokens)
-                        rs(oAuth2Client)
-                    })
-                })
-                .catch(e => rj(e))
-                return
-            }
-
             const oldTokens = JSON.parse(this.store.get("tokens")) as Credentials
 
             oAuth2Client.on("tokens", ((tokens: Credentials) => {
