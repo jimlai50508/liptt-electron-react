@@ -1,13 +1,15 @@
-import { BrowserWindow } from "electron"
+import { BrowserWindow, globalShortcut } from "electron"
 import ElectronStore = require("electron-store")
 import fs = require("fs")
 import path = require("path")
 import url = require("url")
 import querystring = require("querystring")
 import { promisify } from "util"
+import { plus_v1, gmail_v1 } from "googleapis"
 import { Base64 } from "js-base64"
-import { google as gapis } from "googleapis"
-import { OAuth2Client, Credentials, auth } from "google-auth-library"
+import { OAuth2Client, Credentials } from "google-auth-library"
+const libmime = require("libmime")
+const readFile = promisify(fs.readFile)
 
 /// https://console.developers.google.com
 
@@ -41,6 +43,7 @@ export class Google {
     /// https://developers.google.com/+/web/api/rest/latest/people/get
     /// https://developers.google.com/+/web/api/rest/latest/people#emails
     /// https://developers.google.com/gmail/api/v1/reference/users/messages/send
+    /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
 
     /** Google API 應用程式權限範圍 */
     private readonly SCOPES = [
@@ -49,8 +52,11 @@ export class Google {
         "https://www.googleapis.com/auth/gmail.send",
     ]
 
-    private readonly storeName = "googleTokens"
-    private profile: UserProfile
+    private readonly storeName = "google"
+    /**
+     * 存放位置
+     * windows: %UserProfile%\AppData\{AppName}
+     */
     private store: ElectronStore
 
     constructor() {
@@ -68,15 +74,14 @@ export class Google {
     }
 
     private async getUserProfile(client: OAuth2Client): Promise<UserProfile> {
-        const gplus = gapis.plus({version: "v1", auth: client})
+        const plus = new plus_v1.Plus({ auth: client })
 
         try {
-            const resp = await gplus.people.get({userId: "me"})
+            const resp = await plus.people.get({userId: "me"})
             const user: UserProfile = {
                 name: resp.data.displayName,
                 emails: resp.data.emails,
             }
-            this.profile = user
             return user
         } catch (e) {
             throw new Error(e)
@@ -88,40 +93,82 @@ export class Google {
      * @param alias 收件人暱稱
      * @param subject 標題
      * @param content 內容
-     * @param html 內容是否為HTML格式
      */
-    public async SendMailTo(mailto: string, alias: string, subject: string, content: string, html: boolean): Promise<void> {
+    public async SendMailArticleTo(mailto: string, alias: string, subject: string, title: string, htmls: string): Promise<void> {
         try {
-            if (!this.profile) {
-                await this.GetUserProfile()
-            }
             const client = await this.getOAuth2Client()
-            await this.sendMail(client, mailto, alias, subject, content, html)
+            await this.sendMail(client, mailto, alias, subject, title, htmls)
         } catch (e) {
             throw new Error(e)
         }
     }
 
-    private async sendMail(client: OAuth2Client, mailto: string, alias: string, subject: string, content: string, html: boolean): Promise<void> {
+    /**
+     * @param subject 標題
+     * @param content 內容
+     */
+    public async SendMailArticleToSelf(subject: string, title: string, htmls: string[]): Promise<void> {
+        try {
+            const user = await this.GetUserProfile()
+            if (user && user.emails[0].value) {
+                const client = await this.getOAuth2Client()
+                const content = await this.generateHtmlContent(title, htmls)
+                await this.sendMail(client, user.emails[0].value, user.name, subject, title, content)
+            }
+        } catch (e) {
+            throw new Error(e)
+        }
+    }
 
-        const name = this.profile.name
-        const email = this.profile.emails[0].value
+    private async generateHtmlContent(title: string, lines: string[]): Promise<string> {
+        const css = await readFile(path.resolve(__dirname, "../../../resources/liptt-email.css"))
+        return `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta http-equiv=\"Content-type\" content=\"text/html; charset=utf-8\" />
+            <title>${title}</title>
+            <style>
+            ${css}
+            </style>
+        </head>
+        <body>
+            <div class="mainContainer">
+                <div class="container">
+                    <div class="bbsWrapper">
+                    ${lines.reduce((v, cur) => v + cur)}
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>`
+    }
 
-        const gmail = gapis.gmail({version: "v1", auth: client})
-
-        const rawHeader =
-        `From: =?utf-8?B?${Base64.encodeURI(name)}?= <${email}>\r\n` +
-        `To: =?utf-8?B?${Base64.encodeURI(alias)}?= <${mailto}>\r\n` +
-        `Subject: =?utf-8?B?${Base64.encodeURI(subject)}?=\r\n` +
-        `Content-Language: ${"zh-TW"}\r\n` +
-        `Content-Type: text/plain; charset=utf-8\r\n` +
-        "\r\n"
+    private async sendMail(client: OAuth2Client, mailto: string, alias: string, subject: string, title: string, htmlContent: string): Promise<void> {
+        const gmail = new gmail_v1.Gmail({auth: client})
+        const raw =
+        `To: ${libmime.encodeWord(alias, "Q")} <${mailto}>\r\n` +
+        `Subject: ${libmime.encodeWord(subject, "Q")}\r\n` +
+        `MIME-Version: 1.0\r\n` +
+        libmime.foldLines("Content-Type: multipart/mixed; boundary=\"======THIS_IS_BOUNDARY======\"") + "\r\n" +
+        "Content-Description: multipart-1\r\n" +
+        "\r\n" +
+        "--======THIS_IS_BOUNDARY======\r\n" +
+        `Content-Type: text/html\r\n` +
+        `Content-Description: content\r\n` +
+        "\r\n" + htmlContent + "\r\n" +
+        "--======THIS_IS_BOUNDARY======\r\n" +
+        `Content-Type: application/octet-stream\r\n` +
+        `Content-Disposition: attachment; filename=\"${title}.html\"\r\n` +
+        `Content-Description: article\r\n` +
+        "\r\n" +
+        htmlContent + "\r\n" +
+        "--======THIS_IS_BOUNDARY======--\r\n"
 
         try {
             const resp = await gmail.users.messages.send({
                 userId: "me",
                 requestBody: {
-                    raw: Base64.encodeURI(rawHeader + content),
+                    raw: Base64.encodeURI(raw),
                 },
             })
             if (resp.statusText !== "OK") {
@@ -132,28 +179,22 @@ export class Google {
         }
     }
 
-    private async sendSMTP(client: OAuth2Client, smtpMsg: string): Promise<void> {
-
-        const gmail = gapis.gmail({version: "v1", auth: client})
-
+    private async attachImage(filename: string): Promise<string> {
         try {
-            const resp = await gmail.users.messages.send({
-                userId: "me",
-                requestBody: {
-                    // raw: Base64.encodeURI(smtpMsg),
-                },
-            })
-            if (resp.statusText !== "OK") {
-                console.error(resp)
-            }
-        } catch (e) {
-            throw new Error(e)
+            const img = await readFile(filename)
+            const raw =
+            `Content-Type: image/png\r\n` +
+            "Content-Transfer-Encoding: base64\r\n" +
+            `Content-Disposition: attachment; filename=\"${path.basename(filename)}\"\r\n` +
+            `Content-Description: image\r\n` +
+            "\r\n" + img.toString("base64") + "\r\n"
+            return raw
+        } catch (err) {
+            throw new Error(err)
         }
     }
 
     private async getOAuth2Client(): Promise<OAuth2Client> {
-        const readFile = promisify(fs.readFile)
-
         try {
             const content = await readFile(APP_CREDENTIALS_PATH)
             const json = JSON.parse(content.toString())
@@ -231,7 +272,7 @@ export class Google {
 
         return new Promise<string>((rs, rj) => {
 
-            const window = new BrowserWindow({
+            const win = new BrowserWindow({
                 width: 600,
                 height: 720,
                 icon: ICON_PATH,
@@ -243,9 +284,15 @@ export class Google {
                 autoHideMenuBar: true,
             })
 
+            const escape = () => {
+                if (win.isFocused()) {
+                    win.close()
+                }
+            }
+
             let qs: querystring.ParsedUrlQuery
 
-            window.webContents.on("will-navigate", (event: Event, newUrl: string) => {
+            win.webContents.on("will-navigate", (event: Event, newUrl: string) => {
                 if (!newUrl.startsWith("https://localhost/?")) {
                     return
                 }
@@ -253,7 +300,7 @@ export class Google {
                 qs = querystring.parse(url.parse(newUrl).query)
                 window.close()
             })
-            window.on("closed", () => {
+            win.on("closed", () => {
                 if (!qs) {
                     rs("")
                     return
@@ -269,8 +316,8 @@ export class Google {
                 rs(code)
                 return
             })
-            window.loadURL(authUrl)
-            window.show()
+            win.loadURL(authUrl)
+            win.show()
         })
     }
 }

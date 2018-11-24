@@ -1,9 +1,12 @@
-import { Big5UAO } from "../../encoding"
+import { Big5UAO, b2u } from "../../encoding"
 import { Block } from "./block"
 import { Attribute, ForeColor, BackColor } from "./color"
+import { big5HalfWidthList, unicodeHalfWidthList } from "../../utils"
 
 export const TerminalWidth = 80
 export const TerminalHeight = 24
+
+type byte = number
 
 /** PTT的傳統Terminal畫面 */
 export class Terminal {
@@ -382,23 +385,23 @@ export class Terminal {
 
         let str: string = ""
         for (let i = 0; i < TerminalHeight; i++) {
-            str += this.GetRenderStringLine(i)
+            str += Terminal.GetRenderStringLine(this.content[i])
         }
         return str
     }
 
-    private GetRenderStringLine(row: number): string {
+    /** 取得渲染成HTML的單行資料 */
+    public static GetRenderStringLine(line: Block[]): string {
         let str: string = ""
         str += "<span class=\"line\">"
-        let fg: number = this.content[row][0].Foreground
-        let bg: number = this.content[row][0].Background
-        let attr: Attribute = this.content[row][0].Attribute
-        let data: number[] = []
+        let fg: number = line[0].Foreground
+        let bg: number = line[0].Background
+        let attr: Attribute = line[0].Attribute
+        let data: byte[] = []
         let cache: Block
         let isWChar: boolean = false
-
         for (let j = 0; j < TerminalWidth; j++) {
-            const b = this.content[row][j]
+            const b = line[j]
             if (isWChar) {
                 if ((cache.Foreground !== b.Foreground) || (cache.Background !== b.Background) || (cache.Attribute !== b.Attribute)) {
                     if (data.length > 0) {
@@ -419,8 +422,12 @@ export class Terminal {
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
-                } else {
+                } else if (big5HalfWidthList.includes((cache.Content << 8) + b.Content)) {
                     // push to data
+                    str += this.getGroup(data, fg, bg, attr)
+                    str += this.getFullWidthContent(cache.Content, b.Content, fg, bg, attr)
+                    data = []
+                } else {
                     data.push(cache.Content)
                     data.push(b.Content)
                 }
@@ -456,15 +463,24 @@ export class Terminal {
         return str
     }
 
-    private getGroup(data: number[], foreground: number, background: number, attr: Attribute): string {
+    private static getGroup(data: byte[], foreground: number, background: number, attr: Attribute): string {
         const bytes = Uint8Array.from(data)
         const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
         const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
-        const s = this.convertHTML(Big5UAO.GetString(bytes))
-        return `<span class="keepSpace ${fg} ${bg}">` + s + "</span>"
+        const s = Big5UAO.GetString(bytes)
+        let width = 0
+        for (let k = 0; k < s.length; k++) {
+            if (s.charCodeAt(k) < 0x7F) {
+                width += 0.5
+            } else {
+                width += 1
+            }
+        }
+
+        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${width}em\">` + Terminal.convertHTML(s) + "</span>"
     }
 
-    private getHalfColorContent(ldata: number, rdata: number, lfg: number, lbg: number, lattr: Attribute, rfg: number, rbg: number, rattr: Attribute): string {
+    private static getHalfColorContent(ldata: byte, rdata: byte, lfg: number, lbg: number, lattr: Attribute, rfg: number, rbg: number, rattr: Attribute): string {
         const bytes = Uint8Array.from([ldata, rdata])
         let lfgcolor = lattr & Attribute.Bold ? "b" : ""
         let rfgcolor = rattr & Attribute.Bold ? "b" : ""
@@ -475,11 +491,23 @@ export class Terminal {
         const lbgcolor = `b${lattr & Attribute.Reverse ? (87 - lbg) : lbg}`
         const rbgcolor = `b${rattr & Attribute.Reverse ? (87 - rbg) : rbg}`
 
-        const s = this.convertHTML(Big5UAO.GetString(bytes))
-        return `<span class="halfTextContainer"><span class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${s}">${s}</span></span>`
+        const s = Big5UAO.GetString(bytes)
+        const code = (ldata << 8) + rdata
+        const style = big5HalfWidthList.includes(code) ? `style="width: 1em;"` : ""
+        const text = Terminal.convertHTML(s)
+        return `<span class="halfTextContainer"><span ${style} class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${text}">${text}</span></span>`
     }
 
-    private convertHTML(s: string): string {
+    private static getFullWidthContent(ldata: byte, rdata: byte, foreground: number, background: number, attr: Attribute): string {
+        const bytes = Uint8Array.from([ldata, rdata])
+        const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+        const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
+        const s = Big5UAO.GetString(bytes)
+        const text = Terminal.convertHTML(s)
+        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${1}em\">${text}</span>`
+    }
+
+    private static convertHTML(s: string): string {
         s = s.replace("&", "&amp;")
         s = s.replace("\"", "&quot;")
         s = s.replace("<", "&lt;")

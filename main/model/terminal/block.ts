@@ -1,8 +1,11 @@
 import { Attribute, ForeColor, BackColor } from "./color"
+
+type byte = number
+
 /** 字塊 */
 export class Block {
     /** 區塊內容(值範圍:0~0xFF) */
-    public Content: number
+    public Content: byte
     /** 背景色 */
     public Background: number
     /** 前景色 */

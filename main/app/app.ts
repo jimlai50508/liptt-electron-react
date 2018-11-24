@@ -15,7 +15,8 @@ import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
-import { isDevMode, RendererConsole, Storage, LogFile, Google } from "../utils"
+import { isDevMode, RendererConsole, UserStorage, LogFile, Google, big5HalfWidthList } from "../utils"
+import { u2b } from "../encoding"
 
 import { LiPTT } from "../liptt"
 import {
@@ -26,7 +27,7 @@ import {
     HotItem,
     PTTState,
     SocketState,
-    toString,
+    Terminal,
 } from "../model"
 
 export class App {
@@ -89,7 +90,7 @@ export class App {
             // 安裝 react 開發者工具
             installExtension(REACT_DEVELOPER_TOOLS, true)
             .then((name: string) => {
-                console.log(`Added Extension:  ${name}`)
+                // console.warn(`Added Extension:  ${name}`)
             })
             .catch((err: any) => {
                 console.error("REACT_DEVELOPER_TOOLS ", err)
@@ -110,6 +111,7 @@ export class App {
             })
         }
         this.mainWindow.once("show", () => {
+            LogFile.clear()
             LogFile.log("hello world")
             if (isDevMode()) {
                 RendererConsole.warn("electron in development mode")
@@ -211,7 +213,7 @@ export class App {
 
         ipcMain.on("/storage/load/user", async (_: EventEmitter) => {
             await lock.wait()
-            const u = Storage.User
+            const u = UserStorage.User
             this.mainWindow.webContents.send("/storage/load/user", u)
             lock.signal()
         })
@@ -226,7 +228,7 @@ export class App {
                 const s = await this.client.login(u.username, u.password)
                 this.mainWindow.webContents.send("/login", s)
                 if (s === PTTState.MainPage) {
-                    Storage.User = u
+                    UserStorage.User = u
                 }
             } else {
                 this.mainWindow.webContents.send("/login", PTTState.WrongPassword)
@@ -314,7 +316,12 @@ export class App {
         ipcMain.on("/google/send-mail", async (_: EventEmitter) => {
             const g = new Google()
             try {
-                await g.SendMailTo("cd920210@yahoo.com.tw", "陳哈希", "Test google API", "Hello world", true)
+                const lines: string[] = []
+                this.client.curArticleContent.map((arr) => {
+                    lines.push(Terminal.GetRenderStringLine(arr))
+                })
+                const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
+                await g.SendMailArticleToSelf(title, title, lines)
             } catch (err) {
                 console.error(err)
             }

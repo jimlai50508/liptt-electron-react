@@ -26,8 +26,8 @@ export class LiPTT extends Client {
     private scst: SocketState
     private curIndex: number
     private board: string
-    private curArticle: ArticleHeader
-    private curArticleEnd: boolean
+    public curArticle: ArticleHeader
+    public curArticleContent: Block[][]
     private snapshot: Terminal
     private snapshotStat: PTTState
 
@@ -495,13 +495,11 @@ export class LiPTT extends Client {
 
         if (!h.aid || !h.board) {
             this.curArticle = null
-            this.curArticleEnd = false
             return []
         }
 
         if (!/^#[A-Za-z0-9_\-]{8}$/.test(h.aid)) {
             this.curArticle = null
-            this.curArticleEnd = false
             return []
         }
 
@@ -531,10 +529,10 @@ export class LiPTT extends Client {
                 [t, s] = await this.Send(h.aid, 0x0D, 0x72)
                 if (s !== PTTState.Article) {
                     this.curArticle = null
-                    this.curArticleEnd = false
                     return []
                 }
                 this.curArticle = {...h}
+                this.curArticleContent = []
                 break
             } else if (this.snapshotStat === PTTState.Article) {
                 if (h.aid !== this.curArticle.aid) {
@@ -595,6 +593,9 @@ export class LiPTT extends Client {
                 i = c3 ? i - 1 : i
                 const tmp = t.DeepCopy()
                 lines.push(...tmp.Content.slice(TerminalHeight - i, TerminalHeight - 1))
+                for (let k = 0; k < TerminalHeight - i; k++) {
+                    this.curArticleContent.push(t.Content[k])
+                }
             } else if (i > 0) {
                 const prevm = regex.exec(prev.GetString(23))
                 if (prevm) {
@@ -607,6 +608,9 @@ export class LiPTT extends Client {
                 }
                 const tmp = t.DeepCopy()
                 lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
+            }
+            if (lines.length > 0) {
+                this.curArticleContent.push(...lines)
             }
             return lines
         } else {

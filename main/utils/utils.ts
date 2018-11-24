@@ -1,6 +1,5 @@
 import { app, BrowserWindow } from "electron"
 import ElectronStore = require("electron-store")
-import { User } from "../model"
 
 export function isDevMode() {
     return !app.isPackaged
@@ -35,20 +34,6 @@ export class RendererConsole {
     }
 }
 
-/// 存放位置：app.getPath("userData")
-export class Storage {
-
-    private static store: ElectronStore = new ElectronStore({ name: "storage" })
-
-    public static set User(u: User) {
-        Storage.store.set("user", u)
-    }
-
-    public static get User(): User {
-        return Storage.store.get("user")
-    }
-}
-
 export class LogFile {
 
     private static store: ElectronStore = new ElectronStore({ name: "log" })
@@ -71,5 +56,9 @@ export class LogFile {
                 LogFile.store.set("log", l)
             }
         }
+    }
+
+    public static clear() {
+        LogFile.store.set("log", [])
     }
 }

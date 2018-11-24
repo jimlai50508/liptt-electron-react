@@ -80,12 +80,14 @@
         "webpack-merge": "^4.1.4"
     },
     "dependencies": {
+        "canvas": "^2.1.0",
         "crypto-js": "^3.1.9-1",
         "electron-devtools-installer": "^2.2.4",
         "electron-store": "^2.0.0",
         "google-auth-library": "^2.0.1",
         "googleapis": "^35.0.0",
         "js-base64": "^2.4.9",
+        "libmime": "^4.0.1",
         "semaphore-async-await": "^1.5.1",
         "shelljs": "^0.8.3",
         "ws": "^6.1.0"
