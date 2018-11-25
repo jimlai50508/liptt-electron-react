@@ -14,6 +14,8 @@ import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { BoardCache } from "./boardCollection"
 
+type byte = number
+
 export class LiPTT extends Client {
 
     /** "[]" "<>" "［］" "《》" */
@@ -348,8 +350,8 @@ export class LiPTT extends Client {
             }
         }
 
-        [t, s] = await this.Send(Control.SearchBoard())
-        if (s === PTTState.Search) {
+        [t, s] = await this.Send(Control.BoardSuggest())
+        if (s === PTTState.BoardSuggest) {
             [t, s] = await this.Send(board, 0x0D)
         }
         if (s === PTTState.AnyKey) {
@@ -360,7 +362,7 @@ export class LiPTT extends Client {
             return false
         }
         this.boardCache.clear()
-        this.boardCache.Name = board
+        this.boardCache.name = board
         let nStr = t.GetSubstring(3, 0, 7)
         if (nStr[0] === "●" || nStr[0] === ">") {
             nStr = nStr.slice(1)
@@ -523,6 +525,12 @@ export class LiPTT extends Client {
                 break
             }
 
+            // 順便更新人氣指數
+            const matchp = /人氣:(\d+)/.exec(term.GetSubstring(2, 66, 79).trim())
+            if (matchp) {
+                this.boardCache.popularity = matchp[1]
+            }
+
             /// 標題
             let title: string = term.GetSubstring(i, 33, 80).trim()
             const match = this.bracketReg.exec(title)
@@ -536,7 +544,7 @@ export class LiPTT extends Client {
                 deleted,
                 type,
                 title,
-                board: this.boardCache.Name,
+                board: this.boardCache.name,
             }
 
             if (!deleted && match) {
@@ -803,6 +811,39 @@ export class LiPTT extends Client {
             }
         }
         return TerminalHeight // 不相交
+    }
+
+    private async enterSuggestBoard(): Promise<void> {
+        switch (this.snapshotStat) {
+        case PTTState.MainPage:
+        case PTTState.Category:
+        case PTTState.Favorite:
+        case PTTState.Hot:
+        case PTTState.Board:
+        // case PTTState.Article:
+            await this.Send(Control.BoardSuggest())
+            break
+        default:
+            return
+        }
+    }
+
+    private async exitSuggestBoard(): Promise<void> {
+        switch (this.snapshotStat) {
+        case PTTState.BoardSuggest:
+            let text = this.snapshot.GetString(2)
+            text = text.replace("請輸入看板名稱(按空白鍵自動搜尋):", "").trim()
+            const byteArray: byte[] = []
+            for (const _ of text) {
+                byteArray.push(0x08)
+            }
+            byteArray.push(0x0D)
+            await this.Send(Buffer.from(byteArray))
+            break
+        default:
+            return
+        }
+        await this.Send(Control.BoardSuggest())
     }
 
     private popular(popuStr: string, refBlock: Block) {

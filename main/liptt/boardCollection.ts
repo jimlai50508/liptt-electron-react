@@ -3,7 +3,8 @@ import { ArticleAbstract } from "../model"
 /** 蒐集看板頁面資訊 */
 export class BoardCache {
 
-    private name: string
+    public name: string
+    public popularity: string
     /** key: 文章編號 */
     private collection: Map<number, ArticleAbstract>
     private masterCollection: Map<string, ArticleAbstract>
@@ -13,16 +14,7 @@ export class BoardCache {
     constructor() {
         this.collection = new Map<number, ArticleAbstract>()
         this.masterCollection = new Map<string, ArticleAbstract>()
-        this.alreadyGet = 0
-        this.minIndex = Number.MAX_SAFE_INTEGER
-    }
-
-    public set Name(name: string) {
-        this.name = name
-    }
-
-    public get Name(): string {
-        return this.name
+        this.clear()
     }
 
     public clear() {
@@ -31,6 +23,7 @@ export class BoardCache {
         this.alreadyGet = 0
         this.minIndex = Number.MAX_SAFE_INTEGER
         this.name = ""
+        this.popularity = ""
     }
 
     public get isEmpty(): boolean {

@@ -47,12 +47,16 @@ export class Control {
         return Buffer.from([0x20])
     }
 
+    public static Backspace() {
+        return Buffer.from([0x08])
+    }
+
     public static ReloadEcho() {
         return Buffer.from([0x71, 0x72, 0x24])
     }
 
     // Func
-    public static SearchBoard() {
+    public static BoardSuggest() {
         return Buffer.from([0x73])
     }
     // Main Page

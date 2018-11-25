@@ -35,7 +35,7 @@ export enum PTTState {
     /** 我的最愛 */
     Favorite,
     /** 搜尋 */
-    Search,
+    BoardSuggest,
     /** 相關看板一覽表 */
     SearchGroup,
     /** 增加我的最愛 */
@@ -106,7 +106,7 @@ export function StateString(s: PTTState): string {
         return "熱門看板"
     case PTTState.Favorite:
         return "我的最愛"
-    case PTTState.Search:
+    case PTTState.BoardSuggest:
         return "搜尋"
     case PTTState.SearchGroup:
         return "相關看板一覽表"
@@ -151,7 +151,7 @@ export function StateFilter(t: Terminal) {
     const line22 = t.GetString(22)
     const line23 = t.GetString(23)
     if (t.GetString(1).startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
-        return PTTState.Search
+        return PTTState.BoardSuggest
     } else if (line23.includes("登入太頻繁")) {
         return PTTState.HeavyLogin
     } else if (line23.includes("您要刪除以上錯誤嘗試的記錄嗎")) {
@@ -204,6 +204,7 @@ export function StateFilter(t: Terminal) {
     } else if (t.GetString(3).includes("看板設定")) {
         return PTTState.BoardInfo
     } else if (t.GetString(2).startsWith("------------------------------- 相關資訊一覽表 -------------------------------")) {
+        // 待修改
         const x = t.GetSubstring(23, 4, 26).trim()
         if (x === "按空白鍵可列出更多項目" || x === "") {
             return PTTState.SearchGroup
