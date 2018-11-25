@@ -1,7 +1,6 @@
-import { Big5UAO, b2u } from "../../encoding"
+import { Big5UAO, big5HalfWidthList } from "../../encoding"
 import { Block } from "./block"
 import { Attribute, ForeColor, BackColor } from "./color"
-import { big5HalfWidthList, unicodeHalfWidthList } from "../../utils"
 
 export const TerminalWidth = 80
 export const TerminalHeight = 24

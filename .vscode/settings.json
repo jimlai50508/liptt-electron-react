@@ -8,5 +8,6 @@
     },
     "npm.autoDetect": "off",
     "typescript.tsc.autoDetect": "off",
+    "typescript.preferences.quoteStyle": "double",
     "typescript.tsdk": "node_modules/typescript/lib"
 }

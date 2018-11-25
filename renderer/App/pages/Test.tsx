@@ -23,7 +23,6 @@ export class Test extends Component<ComponentProps, ComponentState> {
     private umount: boolean
     private prevab: ArticleAbstract
 
-    private starKey: number = Number.MAX_SAFE_INTEGER - 1
     private ih: number = 30
 
     public async componentDidMount() {
@@ -59,7 +58,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
         }
         const result = ans.map(item => (
         <Row
-            key={item.key !== Number.MAX_SAFE_INTEGER ? item.key : this.starKey--}
+            key={item.key}
             style={{height: this.ih + "px"}}
             className={style.myRow}
         >
@@ -91,7 +90,6 @@ export class Test extends Component<ComponentProps, ComponentState> {
         </Row>))
 
         this.lock.signal()
-
         return result
     }
 

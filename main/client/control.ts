@@ -23,16 +23,20 @@ export class Control {
         return Buffer.from([0x1B, 0x5B, 0x44])
     }
 
+    public static PageUp() {
+        return Buffer.from([0x1B, 0x5B, 0x35, 0x7E])
+    }
+
     public static PageDown() {
-        return Buffer.from([0x06])
+        return Buffer.from([0x1B, 0x5B, 0x36, 0x7E])
     }
 
     public static Home() {
-        return Buffer.from([0x30])
+        return Buffer.from([0x1B, 0x5B, 0x31, 0x7E])
     }
 
     public static End() {
-        return Buffer.from([0x24])
+        return Buffer.from([0x1B, 0x5B, 0x34, 0x7E])
     }
 
     public static AnyKey() {

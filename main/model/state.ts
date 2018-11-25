@@ -231,7 +231,7 @@ export function StateFilter(t: Terminal) {
 }
 
 function testBoard(line0: string, line1: string): boolean {
-    if (line0.startsWith("【板主:")) {
+    if (line0.startsWith("【板主")) {
         if (line1 === "[←]離開 [→]閱讀 [Ctrl-P]發表文章 [d]刪除 [z]精華區 [i]看板資訊/設定 [h]說明   ") {
             return true
         }

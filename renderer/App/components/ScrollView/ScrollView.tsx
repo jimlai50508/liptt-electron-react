@@ -198,12 +198,12 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         if (this.items.length === 0) {
             if (!this.end) {
                 return [(
-                    <div style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
+                    <div key={0} style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
                         <Spin tip="載入中..." style={{position: "absolute", width: "100%", top: "50%"}} />
                     </div>)]
             } else {
                 return [(
-                    <div style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
+                    <div key={0} style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
                         <span style={{position: "absolute", width: "100%", top: "50%", display: "flex", justifyContent: "center", color: "#FFFFFF" }}>空空如也</span>
                     </div>)]
             }
@@ -221,18 +221,18 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         const result: JSX.Element[] = []
 
         if (i > 0) {
-            result.push(<div style={{width: "100%", height: i * ih + "px"}} key={Number.MIN_SAFE_INTEGER}/>)
+            result.push(<div style={{width: "100%", height: i * ih + "px"}} key={Number.MAX_SAFE_INTEGER}/>)
         }
 
         result.push(...contents)
 
         const k = this.items.length - j + 1
         if (k !== 0) {
-            result.push(<div style={{width: "100%", height: k * ih + "px", background: "#000000"}} key={Number.MAX_SAFE_INTEGER} />)
+            result.push(<div style={{width: "100%", height: k * ih + "px", background: "#000000"}} key={0} />)
         }
 
         if (!this.end) {
-            result.push(<Spin key={0} style={{width: "100%", height: ih + "px", background: "#000000"}} />)
+            result.push(<Spin key={Number.MIN_SAFE_INTEGER} style={{width: "100%", height: ih + "px", background: "#000000"}} />)
         }
 
         return result

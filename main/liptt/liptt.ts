@@ -12,6 +12,7 @@ import {
 } from "../model"
 import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
+import { BoardCache } from "./boardCollection"
 
 export class LiPTT extends Client {
 
@@ -24,26 +25,19 @@ export class LiPTT extends Client {
     private readonly authorRegex = /作者  ([A-Za-z0-9]+) \(([\S\s^\(^\)]*)\)\s*(?:看板  )?([A-Za-z0-9\-\_]+)?/
     private readonly afootRegex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
     private scst: SocketState
-    private curIndex: number
-    private board: string
     public curArticle: ArticleHeader
     public curArticleContent: Block[][]
     private snapshot: Terminal
     private snapshotStat: PTTState
 
+    private boardCache: BoardCache
+
     constructor() {
         super()
-        this.sub()
-    }
-
-    public GetTerminalSnapshot(): string {
-        return this.snapshot.GetRenderString()
-    }
-
-    private sub() {
         this.on("Updated", this.onUpdated)
         this.on("StateUpdated", this.onStateUpdated)
         this.on("socket", this.onSocketChanged)
+        this.boardCache = new BoardCache()
     }
 
     private onUpdated(term: Terminal) {
@@ -59,7 +53,7 @@ export class LiPTT extends Client {
     private onStateUpdated(term: Terminal, stat: PTTState) {
         this.snapshotStat = stat
         if (this.snapshotStat === PTTState.MainPage) {
-            this.curIndex = Number.MAX_SAFE_INTEGER
+            this.boardCache.clear()
         }
 
         // Debug.log(StateString(this.snapshotState))
@@ -70,6 +64,10 @@ export class LiPTT extends Client {
 
     private onSocketChanged(stat: SocketState) {
         this.scst = stat
+    }
+
+    public GetTerminalSnapshot(): string {
+        return this.snapshot.GetRenderString()
     }
 
     /** 建立連線, 然後登入 */
@@ -361,295 +359,61 @@ export class LiPTT extends Client {
         } else if (s !== PTTState.Board) {
             return false
         }
-        this.board = board
-        this.curIndex = Number.MAX_SAFE_INTEGER
+        this.boardCache.clear()
+        this.boardCache.Name = board
         let nStr = t.GetSubstring(3, 0, 7)
         if (nStr[0] === "●" || nStr[0] === ">") {
             nStr = nStr.slice(1)
         }
         nStr = nStr.trim()
         if (nStr !== "1") {
-            [t, s] = await this.Send(0x30, 0x0D)
+            [t, s] = await this.Send(Control.Home())
         }
         return true
     }
 
-    public async getMoreArticleAbstract(): Promise<ArticleAbstract[]> {
-        if (this.snapshotStat === PTTState.Article) {
+    public async getMoreArticleAbstract(count: number): Promise<ArticleAbstract[]> {
+
+        if (this.snapshotStat !== PTTState.Board) {
             await this.Send(Control.Left())
-        } else if (this.snapshotStat !== PTTState.Board) {
-            return []
-        }
-        if (this.curIndex === Number.MAX_SAFE_INTEGER) {
-            const [term] = await this.Send(Control.End())
-            const ans = await this.getCurrentArticleAbstract(term)
-            return ans
-        } else if (this.curIndex > 0) {
-            const [term] = await this.Send(this.curIndex.toString(10), 0x0D)
-            const ans = await this.getCurrentArticleAbstract(term)
-            return ans
-        } else {
-            return []
-        }
-    }
-
-    public async getArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
-
-        let h: ArticleHeader = {
-            hasHeader: false,
-            deleted: false,
         }
 
-        let t: Terminal = this.snapshot
-        let s: PTTState = this.snapshotStat
-
-        const match = /^#[A-Za-z0-9_\-]{8}$/.exec(a.aid)
-        if (!match) {
-            h.deleted = true
-            return h
-        }
-
-        if ((s !== PTTState.Board) && (s !== PTTState.Article)) {
-            return {}
-        }
-
-        [t, s] = await this.goToArticle(a.aid)
-        if (s === PTTState.Board) {
-            [t, s] = await this.Send(Control.Right())
-        } else {
-            await this.Send(Control.AnyKey())
-            h.deleted = true
-            return h
-        }
-
-        if (s === PTTState.Article) {
-            if (t.GetString(3).startsWith("───────────────────────────────────────")) {
-                h.hasHeader = true
-            }
-            if (h.hasHeader === true) {
-                h.url = a.url
-                h.coin = a.coin
-                const group0 = this.authorRegex.exec(t.GetString(0))
-                if (group0) {
-                    const g = group0.slice(1)
-                    if (g[0]) {
-                        h.author = g[0].toString()
-                    }
-                    if (g[1]) {
-                        h.nickname = g[1].toString()
-                    }
-                    h.board = g[2] ? g[2].toString() : a.board
-                }
-                const group1 = this.titleRegex.exec(t.GetString(1))
-                if (group1) {
-                    const g = group1.slice(1)
-                    if (g[0]) {
-                        if (g[0] === "Re:") {
-                            h.type = ArticleType.回覆
-                        } else if (g[0] === "Fw:") {
-                            h.type = ArticleType.轉文
-                        } else {
-                            h.type = ArticleType.一般
-                        }
-                    }
-                    if (g[1]) {
-                        h.category = g[1].toString().slice(1, -1).trim()
-                    }
-                    if (g[2]) {
-                        h.title = g[2].toString().trim()
-                    }
-                }
-                const group2 = this.timeRegex.exec(t.GetString(2))
-                if (group2) {
-                    const g = group2.slice(1)
-                    h.date = g.reduce((ans, cur) => ans + " " + cur)
-                }
-            }
-            h = {...h, aid: a.aid, url: a.url, coin: a.coin}
-            await this.Send(Control.Left())
-        } else {
-            h.deleted = true
-            console.log("getArticleHeader(): article is not exist.")
-            await this.Send(Control.AnyKey())
-        }
-        return h
-    }
-
-    private async goToArticle(aid: string): Promise<[Terminal, PTTState]> {
-        return this.Send(aid, 0x0D)
-    }
-
-    // public async enterArticle(a: ArticleAbstract): Promise<boolean> {
-    //     const match = /^#[A-Za-z0-9_\-]{8}$/.exec(a.aid)
-    //     if (!match) {
-    //         return false
-    //     }
-    //     const [t, s] = await this.Send(a.aid, 0x0D, 0x72)
-    //     if (s !== PTTState.Article) {
-    //         return false
-    //     }
-    //     return true
-    // }
-
-    public async getMoreArticleContent(h: ArticleHeader): Promise<Block[][]> {
-
-        if (!h.aid || !h.board) {
-            this.curArticle = null
+        if (this.snapshotStat !== PTTState.Board) {
             return []
         }
 
-        if (!/^#[A-Za-z0-9_\-]{8}$/.test(h.aid)) {
-            this.curArticle = null
-            return []
+        if (count <= this.boardCache.remain) {
+            return this.boardCache.getMore(count)
         }
 
-        const reset: boolean = this.curArticle ? false : true
+        // 抓取看板資料
+        while (this.boardCache.hasMore && count > this.boardCache.remain) {
+            const [term] =
+                this.boardCache.isEmpty ?
+                await this.Send(Control.End()) :
+                await this.Send(Control.PageUp())
 
-        if (!this.curArticle) {
-            this.curArticle = {...h}
+            const ans = await this._getMoreArticleAbstract(term)
+            ans.forEach(i => this.boardCache.add(i))
         }
 
-        const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
-        const lines: Block[][] = []
-        let t: Terminal = this.snapshot
-        let s: PTTState = this.snapshotStat
-        const prev = t.DeepCopy()
-        let pagedown = true
-
-        while (this.snapshotStat !== PTTState.Article || h.aid !== this.curArticle.aid) {
-            pagedown = false
-            if (this.snapshotStat === PTTState.MainPage) {
-                if (!h.board) {
-                    return []
-                }
-                if (!await this.enterBoard(h.board)) {
-                    return []
-                }
-            } else if (this.snapshotStat === PTTState.Board) {
-                [t, s] = await this.Send(h.aid, 0x0D, 0x72)
-                if (s !== PTTState.Article) {
-                    this.curArticle = null
-                    return []
-                }
-                this.curArticle = {...h}
-                this.curArticleContent = []
-                break
-            } else if (this.snapshotStat === PTTState.Article) {
-                if (h.aid !== this.curArticle.aid) {
-                    await this.Send(Control.Left())
-                    await this.Send(Control.Left())
-                    const ok = await this.enterBoard(h.board)
-                    if (!ok) {
-                        return []
-                    }
-                }
-            }
-        }
-
-        function endTest(term: Terminal): boolean {
-            const txt = term.GetString(23)
-            const m = regex.exec(txt)
-            if (m) {
-                if (m[2] === "100") {
-                    return true
-                }
-            }
-            return false
-        }
-
-        function beginTest(term: Terminal): boolean {
-            const txt = term.GetString(23)
-            const m = regex.exec(txt)
-            if (m) {
-                if (parseInt(m[3], 10) === 1) {
-                    return true
-                }
-            }
-            return false
-        }
-
-        if (reset) {
-            if (!beginTest(t)) {
-                [t, s] = await this.Send(Control.Home())
-            }
-        } else if (pagedown) {
-            if (endTest(t)) {
-                return []
-            }
-            [t, s] = await this.Send(Control.PageDown())
-        }
-
-        const match = regex.exec(t.GetString(23))
-        if (match) {
-            let i = this.intersectPrev(prev, t)
-            if (i === TerminalHeight) {
-                const c0 = this.authorRegex.test(t.GetString(0))
-                const c1 = this.titleRegex.test(t.GetString(1))
-                const c2 = this.timeRegex.test(t.GetString(2))
-                const c3 = t.GetString(3).startsWith("───────────────────────────────────────")
-                i = c0 ? i - 1 : i
-                i = c1 ? i - 1 : i
-                i = c2 ? i - 1 : i
-                i = c3 ? i - 1 : i
-                const tmp = t.DeepCopy()
-                lines.push(...tmp.Content.slice(TerminalHeight - i, TerminalHeight - 1))
-                for (let k = 0; k < TerminalHeight - i; k++) {
-                    this.curArticleContent.push(t.Content[k])
-                }
-            } else if (i > 0) {
-                const prevm = regex.exec(prev.GetString(23))
-                if (prevm) {
-                    const pi = parseInt(prevm[3], 10)
-                    const pj = parseInt(prevm[4], 10)
-                    const mi = parseInt(match[3], 10)
-                    const mj = parseInt(match[4], 10)
-                    const predict = Math.max(mi - pi, mj - pj)
-                    i = Math.max(i, predict)
-                }
-                const tmp = t.DeepCopy()
-                lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
-            }
-            if (lines.length > 0) {
-                this.curArticleContent.push(...lines)
-            }
-            return lines
-        } else {
-            return []
-        }
+        return this.boardCache.getMore(count)
+        // if (this.curIndex === Number.MAX_SAFE_INTEGER) {
+        //     await this.Send(0x30, 0x0D)
+        //     const [term] = await this.Send(Control.End())
+        //     const ans = await this._getMoreArticleAbstract(term)
+        //     return ans
+        // } else if (this.curIndex > 0) {
+        //     console.log(this.curIndex)
+        //     const [term] = await this.Send(this.curIndex.toString(10), 0x0D)
+        //     const ans = await this._getMoreArticleAbstract(term)
+        //     return ans
+        // } else {
+        //     return []
+        // }
     }
 
-    /** 判斷相交的偏移量 */
-    private intersectPrev(prev: Terminal, next: Terminal): number {
-        function equalLine(p: Block[], q: Block[]) {
-            if (p.length !== q.length) {
-                return false
-            }
-            for (let i = 0; i < p.length; i++) {
-                if (!p[i].Equal(q[i])) {
-                    return false
-                }
-            }
-            return true
-        }
-
-        function intersect(pr: Terminal, ne: Terminal, offset: number): boolean {
-            for (let k = offset; k < TerminalHeight - 1; k++) {
-                if (!equalLine(pr.Content[k], ne.Content[k - offset])) {
-                    return false
-                }
-            }
-            return true
-        }
-
-        for (let i = 0; i < TerminalHeight - 1; i++) {
-            if (intersect(prev, next, i)) {
-                return i
-            }
-        }
-        return TerminalHeight // 不相交
-    }
-
-    private async getCurrentArticleAbstract(term: Terminal): Promise<ArticleAbstract[]> {
+    private async _getMoreArticleAbstract(term: Terminal): Promise<ArticleAbstract[]> {
         const result: ArticleAbstract[] = []
         for (let i = 22; i > 2; i--) {
 
@@ -658,10 +422,10 @@ export class LiPTT extends Client {
             let index: number = 0
 
             if (indexStr[0] === "●" || indexStr[0] === ">") {
-                indexStr = indexStr[1] === " " ?
-                    indexStr = indexStr.slice(2) :
-                    (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1))
-                indexStr = indexStr.trim()
+                indexStr =
+                    indexStr[1] === " " ?
+                    indexStr = indexStr.slice(2).trim() :
+                    (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
             }
 
             if (indexStr === "★") {
@@ -669,17 +433,14 @@ export class LiPTT extends Client {
                 // get AID
             } else if (indexStr !== "") {
                 index = parseInt(indexStr, 10)
-                if (!index) {
-                    console.error(indexStr)
-                }
-                if (this.curIndex === Number.MAX_SAFE_INTEGER) {
-                    this.curIndex = index
-                } else if (index > this.curIndex) {
-                    continue
-                } else {
-                    index = this.curIndex
-                }
-                this.curIndex--
+                // if (this.curIndex === Number.MAX_SAFE_INTEGER) {
+                //     this.curIndex = index
+                // } else if (index > this.curIndex) {
+                //     continue
+                // } else {
+                //     index = this.curIndex
+                // }
+                // this.curIndex--
             } else {
                 break
             }
@@ -775,7 +536,7 @@ export class LiPTT extends Client {
                 deleted,
                 type,
                 title,
-                board: this.board,
+                board: this.boardCache.Name,
             }
 
             if (!deleted && match) {
@@ -798,6 +559,250 @@ export class LiPTT extends Client {
         }
 
         return result
+    }
+
+    public async getArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
+
+        let h: ArticleHeader = {
+            hasHeader: false,
+            deleted: false,
+        }
+
+        let t: Terminal = this.snapshot
+        let s: PTTState = this.snapshotStat
+
+        const match = /^#[A-Za-z0-9_\-]{8}$/.exec(a.aid)
+        if (!match) {
+            h.deleted = true
+            return h
+        }
+
+        if ((s !== PTTState.Board) && (s !== PTTState.Article)) {
+            return {}
+        }
+
+        [t, s] = await this.goToArticle(a.aid)
+        if (s === PTTState.Board) {
+            [t, s] = await this.Send(Control.Right())
+        } else {
+            await this.Send(Control.AnyKey())
+            h.deleted = true
+            return h
+        }
+
+        if (s === PTTState.Article) {
+            if (t.GetString(3).startsWith("───────────────────────────────────────")) {
+                h.hasHeader = true
+            }
+            if (h.hasHeader === true) {
+                h.url = a.url
+                h.coin = a.coin
+                const group0 = this.authorRegex.exec(t.GetString(0))
+                if (group0) {
+                    const g = group0.slice(1)
+                    if (g[0]) {
+                        h.author = g[0].toString()
+                    }
+                    if (g[1]) {
+                        h.nickname = g[1].toString()
+                    }
+                    h.board = g[2] ? g[2].toString() : a.board
+                }
+                const group1 = this.titleRegex.exec(t.GetString(1))
+                if (group1) {
+                    const g = group1.slice(1)
+                    if (g[0]) {
+                        if (g[0] === "Re:") {
+                            h.type = ArticleType.回覆
+                        } else if (g[0] === "Fw:") {
+                            h.type = ArticleType.轉文
+                        } else {
+                            h.type = ArticleType.一般
+                        }
+                    }
+                    if (g[1]) {
+                        h.category = g[1].toString().slice(1, -1).trim()
+                    }
+                    if (g[2]) {
+                        h.title = g[2].toString().trim()
+                    }
+                }
+                const group2 = this.timeRegex.exec(t.GetString(2))
+                if (group2) {
+                    const g = group2.slice(1)
+                    h.date = g.reduce((ans, cur) => ans + " " + cur)
+                }
+            }
+            h = {...h, aid: a.aid, url: a.url, coin: a.coin}
+            await this.Send(Control.Left())
+        } else {
+            h.deleted = true
+            console.log("getArticleHeader(): article is not exist.")
+            await this.Send(Control.AnyKey())
+        }
+        return h
+    }
+
+    private async goToArticle(aid: string): Promise<[Terminal, PTTState]> {
+        return this.Send(aid, 0x0D)
+    }
+
+    public async getMoreArticleContent(h: ArticleHeader): Promise<Block[][]> {
+
+        if (!h.aid || !h.board) {
+            this.curArticle = null
+            return []
+        }
+
+        if (!/^#[A-Za-z0-9_\-]{8}$/.test(h.aid)) {
+            this.curArticle = null
+            return []
+        }
+
+        const reset: boolean = this.curArticle ? false : true
+
+        if (!this.curArticle) {
+            this.curArticle = {...h}
+        }
+
+        const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
+        const lines: Block[][] = []
+        let t: Terminal = this.snapshot
+        let s: PTTState = this.snapshotStat
+        const prev = t.DeepCopy()
+        let pagedown = true
+
+        while (this.snapshotStat !== PTTState.Article || h.aid !== this.curArticle.aid) {
+            pagedown = false
+            if (this.snapshotStat === PTTState.MainPage) {
+                if (!h.board) {
+                    return []
+                }
+                if (!await this.enterBoard(h.board)) {
+                    return []
+                }
+            } else if (this.snapshotStat === PTTState.Board) {
+                [t, s] = await this.Send(h.aid, 0x0D, 0x72)
+                if (s !== PTTState.Article) {
+                    this.curArticle = null
+                    return []
+                }
+                this.curArticle = {...h}
+                this.curArticleContent = []
+                break
+            } else if (this.snapshotStat === PTTState.Article) {
+                if (h.aid !== this.curArticle.aid) {
+                    await this.Send(Control.Left())
+                    await this.Send(Control.Left())
+                    const ok = await this.enterBoard(h.board)
+                    if (!ok) {
+                        return []
+                    }
+                }
+            }
+        }
+
+        function endTest(term: Terminal): boolean {
+            const txt = term.GetString(23)
+            const m = regex.exec(txt)
+            if (m) {
+                if (m[2] === "100") {
+                    return true
+                }
+            }
+            return false
+        }
+
+        function beginTest(term: Terminal): boolean {
+            const txt = term.GetString(23)
+            const m = regex.exec(txt)
+            if (m) {
+                if (parseInt(m[3], 10) === 1) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        if (reset) {
+            if (!beginTest(t)) {
+                [t, s] = await this.Send(Control.Home())
+            }
+        } else if (pagedown) {
+            if (endTest(t)) {
+                return []
+            }
+            [t, s] = await this.Send(Control.PageDown())
+        }
+
+        const match = regex.exec(t.GetString(23))
+        if (match) {
+            let i = this._intersectPrev(prev, t)
+            if (i === TerminalHeight) {
+                const c0 = this.authorRegex.test(t.GetString(0))
+                const c1 = this.titleRegex.test(t.GetString(1))
+                const c2 = this.timeRegex.test(t.GetString(2))
+                const c3 = t.GetString(3).startsWith("───────────────────────────────────────")
+                i = c0 ? i - 1 : i
+                i = c1 ? i - 1 : i
+                i = c2 ? i - 1 : i
+                i = c3 ? i - 1 : i
+                const tmp = t.DeepCopy()
+                lines.push(...tmp.Content.slice(TerminalHeight - i, TerminalHeight - 1))
+                for (let k = 0; k < TerminalHeight - i; k++) {
+                    this.curArticleContent.push(t.Content[k])
+                }
+            } else if (i > 0) {
+                const prevm = regex.exec(prev.GetString(23))
+                if (prevm) {
+                    const pi = parseInt(prevm[3], 10)
+                    const pj = parseInt(prevm[4], 10)
+                    const mi = parseInt(match[3], 10)
+                    const mj = parseInt(match[4], 10)
+                    const predict = Math.max(mi - pi, mj - pj)
+                    i = Math.max(i, predict)
+                }
+                const tmp = t.DeepCopy()
+                lines.push(...tmp.Content.slice(TerminalHeight - i - 1, TerminalHeight - 1))
+            }
+            if (lines.length > 0) {
+                this.curArticleContent.push(...lines)
+            }
+            return lines
+        } else {
+            return []
+        }
+    }
+
+    /** 判斷相交的偏移量 */
+    private _intersectPrev(prev: Terminal, next: Terminal): number {
+        function equalLine(p: Block[], q: Block[]) {
+            if (p.length !== q.length) {
+                return false
+            }
+            for (let i = 0; i < p.length; i++) {
+                if (!p[i].Equal(q[i])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        function intersect(pr: Terminal, ne: Terminal, offset: number): boolean {
+            for (let k = offset; k < TerminalHeight - 1; k++) {
+                if (!equalLine(pr.Content[k], ne.Content[k - offset])) {
+                    return false
+                }
+            }
+            return true
+        }
+
+        for (let i = 0; i < TerminalHeight - 1; i++) {
+            if (intersect(prev, next, i)) {
+                return i
+            }
+        }
+        return TerminalHeight // 不相交
     }
 
     private popular(popuStr: string, refBlock: Block) {
@@ -866,12 +871,12 @@ export class LiPTT extends Client {
         command.push(0x51)
         let [t] = await this.Send(Buffer.from(command))
 
-        const [aid, url, coin] = this.getAIDetail(t);
+        const [aid, url, coin] = this._getAID(t);
         [t] = await this.Send(Control.AnyKey())
 
         return [aid, url, coin, t]
     }
-    private getAIDetail(term: Terminal): [string, string, string] {
+    private _getAID(term: Terminal): [string, string, string] {
         let aid = ""
         let url = ""
         let coin = ""

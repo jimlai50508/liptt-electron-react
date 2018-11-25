@@ -9,14 +9,14 @@ import {
     MenuItemConstructorOptions,
     MenuItem,
     EventEmitter,
+    Debugger,
 } from "electron"
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer"
 import * as path from "path"
 import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
-import { isDevMode, RendererConsole, UserStorage, LogFile, Google, big5HalfWidthList } from "../utils"
-import { u2b } from "../encoding"
+import { isDevMode, RendererConsole, UserStorage, LogFile, Google } from "../utils"
 
 import { LiPTT } from "../liptt"
 import {
@@ -267,13 +267,9 @@ export class App {
 
         /// 取得文章列表
         ipcMain.on("/board/get-more", async (_: EventEmitter) => {
-
-            let result: ArticleAbstract[] = []
             await lock.wait()
-            for (let i = 0; i < 3; i++) {
-                const ans = await this.client.getMoreArticleAbstract()
-                result = [...result, ...ans]
-            }
+            const result = await this.client.getMoreArticleAbstract(30)
+            RendererConsole.warn(result)
             this.mainWindow.webContents.send("/board/get-more", result)
             lock.signal()
         })
