@@ -13,14 +13,14 @@ body {
     margin-left: auto;
     margin-right: auto;
     color: #9c4747;
-    font-family: MingLiu,SymMingLiU,monospace;
+    font-family: MingLiu,monospace;
     font-size: 1.5em;
 }
 .bbsWrapper {
     display: inline-block;
 }
 .line {
-    line-height: 0.98;
+    line-height: 1.0;
     padding: 0;
     margin: 0;
     border: none;

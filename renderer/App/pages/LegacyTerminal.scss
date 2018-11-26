@@ -5,7 +5,7 @@ and (min-width: 1300px),
 screen 
 and (min-height: 680px) {
     .container {
-        font-size: 28px;
+        font-size: 24px;
     }
 }
 
@@ -76,7 +76,7 @@ and (max-height: 420px) {
 
 #cursor {
     display: inline-block;
-    font-family : MingLiu,SymMingLiU,monospace;
+    font-family : MingLiu,monospace;
     font-weight: bold;
     color: rgb(97, 255, 23);
     user-select: none;
@@ -155,9 +155,8 @@ and (max-height: 420px) {
     margin-top: auto;
     margin-bottom: auto;
     width: 98vw;
-    letter-spacing: 0px;
     color: #9c4747;
-    font-family: MingLiu,SymMingLiU;
+    font-family: MingLiu,monospace;
     transition:font-size 0.2s ease-out;
 }
 

@@ -2,7 +2,7 @@
 
 (實驗中)
 
-[Slide](https://lightyen.github.io/liptt-electron-react/pages/reveal-slide/)
+[Slide](https://slides.com/lightyen/liptt-electron-react/fullscreen)
 
 ## Debug 測試
 
