@@ -1,2 +1,4 @@
-*.js linguist-language=Typescript
-* linguist-language=Typescript
+*.json linguist-language=Typescript
+*.css linguist-language=Typescript
+*.scss linguist-language=Typescript
+*.md linguist-language=Typescript
