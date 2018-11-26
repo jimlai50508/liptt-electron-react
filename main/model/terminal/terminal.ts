@@ -377,6 +377,14 @@ export class Terminal {
         return this.content[row][col]
     }
 
+    public GetLines(): string[] {
+        const lines: string[] = []
+        for (let i = 0; i < TerminalHeight; i++) {
+            lines.push(this.GetString(i))
+        }
+        return lines
+    }
+
     public GetRenderString(): string {
         if (!this.content) {
             return ""

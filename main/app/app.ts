@@ -310,17 +310,21 @@ export class App {
         })
 
         ipcMain.on("/google/send-mail", async (_: EventEmitter) => {
-            const g = new Google()
-            try {
-                const lines: string[] = []
-                this.client.curArticleContent.map((arr) => {
-                    lines.push(Terminal.GetRenderStringLine(arr))
-                })
-                const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
-                await g.SendMailArticleToSelf(title, title, lines)
-            } catch (err) {
-                console.error(err)
-            }
+            await lock.wait()
+            const result = await this.client.sendTestMail("lightyan", "Test", "Hello World")
+            console.log(result)
+            lock.signal()
+            // const g = new Google()
+            // try {
+            //     const lines: string[] = []
+            //     this.client.curArticleContent.map((arr) => {
+            //         lines.push(Terminal.GetRenderStringLine(arr))
+            //     })
+            //     const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
+            //     await g.SendMailArticleToSelf(title, title, lines)
+            // } catch (err) {
+            //     console.error(err)
+            // }
         })
 
         ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {

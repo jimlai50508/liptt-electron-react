@@ -9,6 +9,7 @@ import {
     PTTState,
     StateFilter,
     SocketState,
+    StateString,
 } from "../model"
 import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
@@ -58,7 +59,7 @@ export class LiPTT extends Client {
             this.boardCache.clear()
         }
 
-        // Debug.log(StateString(this.snapshotState))
+        console.log(StateString(this.snapshotStat))
         // for (let i = 0; i < 24; i++) {
         //     Debug.log(term.GetString(i))
         // }
@@ -146,6 +147,9 @@ export class LiPTT extends Client {
                 break
             case PTTState.AlreadyLogin:
                 [, stat] = await this.Send(Control.Yes()) // 刪除重複的連線
+                break
+            case PTTState.UnsavedFile:
+                [, stat] = await this.Send("q", 0x0D) // 文章或信件尚未完成，不儲存
                 break
             case PTTState.AnyKey:
                 [, stat] = await this.Send(Control.AnyKey())
@@ -917,6 +921,7 @@ export class LiPTT extends Client {
 
         return [aid, url, coin, t]
     }
+
     private _getAID(term: Terminal): [string, string, string] {
         let aid = ""
         let url = ""
@@ -939,6 +944,49 @@ export class LiPTT extends Client {
             }
         }
         return [aid, url, coin]
+    }
+
+    public async sendTestMail(username: string, subject: string, content: string): Promise<string> {
+        let term: Terminal
+        let stat: PTTState
+        await this.Send(Control.Mail())
+        await this.Send(Control.SendMail());
+        [term, stat] = await this.Send(username, 0x0D)
+
+        while (stat !== PTTState.MailSubject) {
+            if (stat === PTTState.PersonMail) {
+                await this.Send(Control.Left())
+                return "使用者不存在"
+            }
+            [term, stat] = await this.WaitForNext()
+        }
+
+        [term, stat] = await this.Send(subject, 0x0D)
+        while (stat !== PTTState.EditFile) {
+            [term, stat] = await this.WaitForNext()
+        }
+
+        [term, stat] = await this.Send(content, 0x0D);
+        [term, stat] = await this.Send(Control.CtrlX())
+        while (stat !== PTTState.ProcessFile) {
+            [term, stat] = await this.WaitForNext()
+        }
+
+        [term, stat] = await this.Send(0x73, 0x0D)
+        while (stat !== PTTState.MailSuccess) {
+            if (stat === PTTState.Signature) {
+                [term, stat] = await this.Send(0x30, 0x0D)
+                continue
+            }
+            [term, stat] = await this.WaitForNext()
+        }
+
+        [term, stat] = await this.Send(Control.No())
+        while (stat !== PTTState.MainPage) {
+            [term, stat] = await this.Send(Control.Left())
+        }
+
+        return "Success"
     }
 
     public checkEmail(): boolean {

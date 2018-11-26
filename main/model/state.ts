@@ -1,4 +1,4 @@
-import { Terminal } from "./terminal"
+import { Terminal, TerminalHeight } from "./terminal"
 
 /** PTT的畫面狀態 */
 export enum PTTState {
@@ -60,6 +60,22 @@ export enum PTTState {
     ExitConcern,
     /** 找不到這個文章代碼 */
     AIDNotFound,
+    /** 個人信箱 */
+    PersonMail,
+    /** 寄站內信 */
+    SendMail,
+    /** 信件標題 */
+    MailSubject,
+    /** 編輯文章或信件內容 */
+    EditFile,
+    /** 處理文章或信件 */
+    ProcessFile,
+    /** 選擇簽名檔 */
+    Signature,
+    /** 已順利寄出 */
+    MailSuccess,
+    /** 編輯器自動復原 */
+    UnsavedFile,
     /** 未定義的狀態 */
     WhereAmI,
     /** 已連線 */
@@ -130,6 +146,22 @@ export function StateString(s: PTTState): string {
         return "確定要離開"
     case PTTState.AIDNotFound:
         return "找不到文章代碼"
+    case PTTState.PersonMail:
+        return "個人信箱"
+    case PTTState.SendMail:
+        return "寄站內信"
+    case PTTState.MailSubject:
+        return "輸入信件標題"
+    case PTTState.EditFile:
+        return "編輯文章或信件內容"
+    case PTTState.ProcessFile:
+        return "處理文章或信件"
+    case PTTState.Signature:
+        return "選擇簽名檔"
+    case PTTState.MailSuccess:
+        return "已順利寄出"
+    case PTTState.UnsavedFile:
+        return "編輯器自動復原"
     case PTTState.Connected:
         return "已連線"
     case PTTState.WebSocketClosed:
@@ -148,21 +180,22 @@ let flag: object
 let prevMatch: RegExpExecArray
 
 export function StateFilter(t: Terminal) {
-    const line22 = t.GetString(22)
-    const line23 = t.GetString(23)
-    if (t.GetString(1).startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
+    const lines = t.GetLines()
+    if (lines[1].startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
         return PTTState.BoardSuggest
-    } else if (line23.includes("登入太頻繁")) {
+    } else if (lines[23].includes("登入太頻繁")) {
         return PTTState.HeavyLogin
-    } else if (line23.includes("您要刪除以上錯誤嘗試的記錄嗎")) {
+    } else if (lines[23].includes("您要刪除以上錯誤嘗試的記錄嗎")) {
         return PTTState.Log
-    } else if (line23.trimLeft().startsWith("◆ 此文章無內容")) {
+    } else if (lines[23].trimLeft().startsWith("◆ 此文章無內容")) {
         return PTTState.ArticleDeleted
-    } else if (line23.includes("您覺得這篇文章")) {
+    } else if (lines[23].includes("您覺得這篇文章")) {
         return PTTState.Comment
-    } else if (articleFootReg.test(line23)) {
+    } else if (lines[23].trimLeft().startsWith("編輯文章  (^Z/F1)說明 (^P/^G)插入符號/範本 (^X/^Q)離開")) {
+        return PTTState.EditFile
+    } else if (articleFootReg.test(lines[23])) {
         if (flag) {
-            const match = articleFootReg.exec(line23)
+            const match = articleFootReg.exec(lines[23])
             if (match) {
                 if (match[3] === prevMatch[3]) {
                     return PTTState.WhereAmI
@@ -172,38 +205,43 @@ export function StateFilter(t: Terminal) {
             }
         } else {
             flag = {}
-            prevMatch = articleFootReg.exec(line23)
+            prevMatch = articleFootReg.exec(lines[23])
         }
         return PTTState.Article
     } else if (t.GetSubstring(23, 66, 74) === "[呼叫器]") {
+        if (lines[0].startsWith("【電子郵件】")) {
+            return PTTState.PersonMail
+        }
         return PTTState.MainPage
-    } else if (line22.includes("您想刪除其他重複登入的連線嗎")) {
+    } else if (lines[22].startsWith("已順利寄出，是否自存底稿(Y/N)？")) {
+        return PTTState.MailSuccess
+    } else if (lines[22].includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
-    } else if (line22.includes("您確定要離開")) {
+    } else if (lines[22].includes("您確定要離開")) {
         return PTTState.ExitConcern
-    } else if (line22.startsWith("登入中")) {
+    } else if (lines[22].startsWith("登入中")) {
         return PTTState.Logging
-    } else if (line22.startsWith("正在更新與同步")) {
-        if (line23.includes("任意鍵")) {
+    } else if (lines[22].startsWith("正在更新與同步")) {
+        if (lines[23].includes("任意鍵")) {
             return PTTState.AnyKey
         } else {
             return PTTState.Synchronizing
         }
-    } else if (t.GetString(21).includes("密碼不對或無此帳號")) {
+    } else if (lines[21].includes("密碼不對或無此帳號")) {
         return PTTState.WrongPassword
-    } else if (t.GetString(21).startsWith("密碼正確！")) {
+    } else if (lines[21].startsWith("密碼正確！")) {
         return PTTState.Accept
-    } else if (t.GetString(21).includes("請輸入您的密碼:")) {
+    } else if (lines[21].includes("請輸入您的密碼:")) {
         return PTTState.Password
-    } else if (t.GetString(20).includes("請輸入代號，")) {
+    } else if (lines[20].includes("請輸入代號，")) {
         return PTTState.Username
-    } else if (t.GetString(13).includes("系統過載")) {
+    } else if (lines[13].includes("系統過載")) {
         return PTTState.Overloading
-    } else if (t.GetString(4).includes("批踢踢實業坊        ◢▃██◥█◤")) {
+    } else if (lines[4].includes("批踢踢實業坊        ◢▃██◥█◤")) {
         return PTTState.Horse
-    } else if (t.GetString(3).includes("看板設定")) {
+    } else if (lines[3].includes("看板設定")) {
         return PTTState.BoardInfo
-    } else if (t.GetString(2).startsWith("------------------------------- 相關資訊一覽表 -------------------------------")) {
+    } else if (lines[2].startsWith("------------------------------- 相關資訊一覽表 -------------------------------")) {
         // 待修改
         const x = t.GetSubstring(23, 4, 26).trim()
         if (x === "按空白鍵可列出更多項目" || x === "") {
@@ -211,20 +249,31 @@ export function StateFilter(t: Terminal) {
         } else {
             return PTTState.WhereAmI
         }
-    } else if (testBoard(t.GetString(0), t.GetString(1))) {
+    } else if (testBoard(lines[0], lines[1])) {
         flag = undefined
         return PTTState.Board
-    } else if (t.GetString(0).startsWith("【分類看板】"))  {
+    } else if (lines[0].startsWith("【分類看板】"))  {
         return PTTState.Category
-    } else if (testFavor(t.GetString(2), line23)) {
+    } else if (lines[0].startsWith("【 站內寄信 】")) {
+        if (lines[2].startsWith("主題：")) {
+            return PTTState.MailSubject
+        }
+        return PTTState.SendMail
+    } else if (lines[0].startsWith("【 檔案處理 】")) {
+        return PTTState.ProcessFile
+    } else if (lines[0].startsWith("【 編輯器自動復原 】")) {
+        return PTTState.UnsavedFile
+    } else if (lines[0].startsWith("請選擇簽名檔 (1-9, 0=不加 x=隨機)")) {
+        return PTTState.Signature
+    } else if (testFavor(lines[2], lines[23])) {
         return PTTState.Favorite
-    } else if (testHot(t.GetString(2), line23)) {
+    } else if (testHot(lines[2], lines[23])) {
         return PTTState.Hot
-    } else if (t.GetString(22).startsWith("找不到這個文章代碼(AID)")) {
+    } else if (lines[22].startsWith("找不到這個文章代碼(AID)")) {
         return PTTState.AIDNotFound
-    } else if (t.GetString(1).startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
+    } else if (lines[1].startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
         return PTTState.AddFavorite
-    } else if (line23.includes("任意鍵")) {
+    } else if (lines[23].includes("任意鍵")) {
         return PTTState.AnyKey
     } else {
         return PTTState.WhereAmI

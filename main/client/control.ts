@@ -55,10 +55,10 @@ export class Control {
         return Buffer.from([0x71, 0x72, 0x24])
     }
 
-    // Func
     public static BoardSuggest() {
         return Buffer.from([0x73])
     }
+
     // Main Page
 
     /** (A)nnounce 精華公佈欄 */
@@ -109,5 +109,16 @@ export class Control {
     /** (G)oodbye 再見 */
     public static Goodbye() {
         return Buffer.from([0x47, 0x0D, 0x79, 0x0D, 0x20])
+    }
+
+    // PTT 信箱服務
+
+    /** 寄站內信 */
+    public static SendMail() {
+        return Buffer.from([0x53, 0x0D])
+    }
+
+    public static CtrlX() {
+        return Buffer.from([0x18])
     }
 }
