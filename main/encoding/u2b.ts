@@ -2,7 +2,8 @@ interface Table {
     [key: number]: number,
 }
 
-const table: Table = {
+/** UAO 2.50 unicode to big5 */
+export const u2b: Table = {
 0x00A1: 0xA0DF,
 0x00A2: 0xA246,
 0x00A3: 0xA247,
@@ -25920,5 +25921,3 @@ const table: Table = {
 0xFFED: 0xA1BD,
 0xFFEE: 0xA1B3,
 }
-
-export default table

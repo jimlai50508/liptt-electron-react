@@ -412,6 +412,7 @@ const big5HalfWidthList: HalfWidthList = [
     0xFEE2,
 ]
 
+/** 基於MingLiu字型所包含的非FullWidth的unicode編碼 */
 const unicodeHalfWidthList: HalfWidthList = [
     0xDC,
     0xFC,
