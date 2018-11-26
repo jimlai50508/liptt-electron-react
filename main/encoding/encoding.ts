@@ -1,5 +1,5 @@
-import b2u from "./b2u"
-import u2b from "./u2b"
+import { b2u } from "./b2u"
+import { u2b } from "./u2b"
 
 /** Big5 (Unicode-at-on 2.50) : 最早是為了解決所謂 CP950 沒有正確對應日文假名的問題， 並加入了中國海字集（DOS 時代最流行的外字集）的部份， 2.0 後又自訂編碼在 Big5 的造字區加入了大量日文漢字及簡体字。 不相容 Big5-HKSCS。  */
 /** https://moztw.org/docs/big5/ */
