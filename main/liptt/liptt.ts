@@ -35,12 +35,15 @@ export class LiPTT extends Client {
 
     private boardCache: BoardCache
 
+    private isMailOverflow: boolean
+
     constructor() {
         super()
         this.on("Updated", this.onUpdated)
         this.on("StateUpdated", this.onStateUpdated)
         this.on("socket", this.onSocketChanged)
         this.boardCache = new BoardCache()
+        this.isMailOverflow = false
     }
 
     private onUpdated(term: Terminal) {
@@ -59,7 +62,7 @@ export class LiPTT extends Client {
             this.boardCache.clear()
         }
 
-        console.log(StateString(this.snapshotStat))
+        // console.log(StateString(this.snapshotStat))
         // for (let i = 0; i < 24; i++) {
         //     Debug.log(term.GetString(i))
         // }
@@ -150,6 +153,14 @@ export class LiPTT extends Client {
                 break
             case PTTState.UnsavedFile:
                 [, stat] = await this.Send("q", 0x0D) // 文章或信件尚未完成，不儲存
+                break
+            case PTTState.MailOverflow:
+                [, stat] = await this.Send(Control.AnyKey())
+                this.isMailOverflow = true
+                break
+            case PTTState.MailList:
+            case PTTState.PersonMail:
+                [, stat] = await this.Send(0x71)
                 break
             case PTTState.AnyKey:
                 [, stat] = await this.Send(Control.AnyKey())
@@ -949,6 +960,10 @@ export class LiPTT extends Client {
     public async sendTestMail(username: string, subject: string, content: string): Promise<string> {
         let term: Terminal
         let stat: PTTState
+        if (this.isMailOverflow) {
+            return "信箱滿了 請整理"
+        }
+
         await this.Send(Control.Mail())
         await this.Send(Control.SendMail());
         [term, stat] = await this.Send(username, 0x0D)
@@ -986,7 +1001,7 @@ export class LiPTT extends Client {
             [term, stat] = await this.Send(Control.Left())
         }
 
-        return "Success"
+        return "寄信成功"
     }
 
     public checkEmail(): boolean {

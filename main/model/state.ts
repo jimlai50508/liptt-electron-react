@@ -1,4 +1,4 @@
-import { Terminal, TerminalHeight } from "./terminal"
+import { Terminal } from "./terminal"
 
 /** PTT的畫面狀態 */
 export enum PTTState {
@@ -62,6 +62,8 @@ export enum PTTState {
     AIDNotFound,
     /** 個人信箱 */
     PersonMail,
+    /** 郵件清單 */
+    MailList,
     /** 寄站內信 */
     SendMail,
     /** 信件標題 */
@@ -76,6 +78,8 @@ export enum PTTState {
     MailSuccess,
     /** 編輯器自動復原 */
     UnsavedFile,
+    /** 信箱滿出來了 */
+    MailOverflow,
     /** 未定義的狀態 */
     WhereAmI,
     /** 已連線 */
@@ -148,6 +152,8 @@ export function StateString(s: PTTState): string {
         return "找不到文章代碼"
     case PTTState.PersonMail:
         return "個人信箱"
+    case PTTState.MailList:
+        return "郵件選單"
     case PTTState.SendMail:
         return "寄站內信"
     case PTTState.MailSubject:
@@ -162,6 +168,8 @@ export function StateString(s: PTTState): string {
         return "已順利寄出"
     case PTTState.UnsavedFile:
         return "編輯器自動復原"
+    case PTTState.MailOverflow:
+        return "您保存信件數目已超出上限"
     case PTTState.Connected:
         return "已連線"
     case PTTState.WebSocketClosed:
@@ -191,6 +199,8 @@ export function StateFilter(t: Terminal) {
         return PTTState.ArticleDeleted
     } else if (lines[23].includes("您覺得這篇文章")) {
         return PTTState.Comment
+    } else if (lines[23].startsWith(" 鴻雁往返  (R/y)回信 (x)站內轉寄 (d/D)刪信 (^P)寄發新信")) {
+        return PTTState.MailList
     } else if (lines[23].trimLeft().startsWith("編輯文章  (^Z/F1)說明 (^P/^G)插入符號/範本 (^X/^Q)離開")) {
         return PTTState.EditFile
     } else if (articleFootReg.test(lines[23])) {
@@ -274,6 +284,9 @@ export function StateFilter(t: Terminal) {
     } else if (lines[1].startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
         return PTTState.AddFavorite
     } else if (lines[23].includes("任意鍵")) {
+        if (/◆ 您保存信件數目 \d+ 超出上限 \d+, 請整理/.test(lines[23])) {
+            return PTTState.MailOverflow
+        }
         return PTTState.AnyKey
     } else {
         return PTTState.WhereAmI
