@@ -22,3 +22,6 @@
 - /docs: 相關文件
 - /dist: 編譯後的 electron main 與 renderer webpack bundle
 - /release: 編譯後的懶人包位置
+
+## Change Log
+> 待補
