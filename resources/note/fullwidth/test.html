@@ -46,20 +46,24 @@
 <script src="./b2u.js"></script>
 <script>
 
-function isFullWidth(code) {
+function calcWidth(code, defaultSize) {
     const canvas = document.createElement('canvas')
     const text = String.fromCharCode(code)
     const ctx = canvas.getContext("2d")
-    const defaultSize = 14
     ctx.font = `${defaultSize}px \"MingLiu\"`
     const dimension = ctx.measureText(text)
+    return dimension.width
+}
 
-    if (dimension.width < defaultSize) {
+function isFullWidth(code, defaultSize) {
+    if (calcWidth(code, defaultSize) < defaultSize) {
         return false
     } else {
         return true
     }
 }
+
+
 
 $(document).ready(function(){
 
@@ -74,7 +78,7 @@ $(document).ready(function(){
     let ans = []
 
     const text = htm.reduce((acc, cur) => {
-        if (!isFullWidth(cur.unicode)) {
+        if (!isFullWidth(cur.unicode, 14)) {
             ans.push(cur)
             return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur.unicode + "\" class=\"line\">" + String.fromCodePoint(cur.unicode) + "</div>"
         } else {
@@ -82,7 +86,19 @@ $(document).ready(function(){
         }
     })
 
-    $("#output").html(text)
+    let h = []
+    for (let i = 0x20; i < 0x7F; i++) {
+        h.push(i)
+    }
+    const extra = h.reduce((acc, cur) => {
+        if (calcWidth(cur, 14) !== 7) {
+            return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur + "\" class=\"line\">" + String.fromCharCode(cur) + "</div>"
+        } else {
+            return acc
+        }
+    })
+
+    $("#output").html(text + extra)
 })
 
 

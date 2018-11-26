@@ -298,7 +298,7 @@ export class Google {
                 }
                 event.preventDefault()
                 qs = querystring.parse(url.parse(newUrl).query)
-                window.close()
+                win.close()
             })
             win.on("closed", () => {
                 if (!qs) {
