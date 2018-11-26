@@ -15,7 +15,6 @@
 
 ---
 
-* [Slide](./pages/reveal-slide/)
 * [建立環境](./pages/environment.md)
 * [vscode 的 Task](./pages/vscode-task.md)
 * [偵錯 Debug](./pages/debug.md)
