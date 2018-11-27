@@ -14,6 +14,7 @@ export class MailPage extends Component<ComponentProps, ComponentState> {
     public componentDidMount() {
         PromiseIpcRenderer.send<MailAbstract[]>(ApiRoute.getMailList)
         .then((result) => {
+            console.warn(result)
         })
     }
 

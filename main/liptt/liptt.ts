@@ -15,6 +15,7 @@ import {
 import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { BoardCache } from "./boardCollection"
+import { MailCache } from "./mailCollection"
 
 type byte = number
 
@@ -34,17 +35,17 @@ export class LiPTT extends Client {
     private snapshot: Terminal
     private snapshotStat: PTTState
 
+    private mailCache: MailCache
     private boardCache: BoardCache
 
-    private isMailOverflow: boolean
+    private newMail: boolean
 
     constructor() {
         super()
+        this.boardCache = new BoardCache()
         this.on("Updated", this.onUpdated)
         this.on("StateUpdated", this.onStateUpdated)
         this.on("socket", this.onSocketChanged)
-        this.boardCache = new BoardCache()
-        this.isMailOverflow = false
     }
 
     private onUpdated(term: Terminal) {
@@ -61,9 +62,10 @@ export class LiPTT extends Client {
         this.snapshotStat = stat
         if (this.snapshotStat === PTTState.MainPage) {
             this.boardCache.clear()
+            this.newMail = this.snapshot.GetSubstring(0, 30, 48).trim() === "你有新信件" ? true : false
         }
 
-        // console.log(StateString(this.snapshotStat))
+        console.log(StateString(this.snapshotStat))
         // for (let i = 0; i < 24; i++) {
         //     Debug.log(term.GetString(i))
         // }
@@ -144,6 +146,8 @@ export class LiPTT extends Client {
             return stat
         }
 
+        this.mailCache = new MailCache()
+
         while (stat !== PTTState.MainPage) {
             switch (stat) {
             case PTTState.Log:
@@ -165,8 +169,13 @@ export class LiPTT extends Client {
                 }
                 break
             case PTTState.MailOverflow:
+                const regex = /您保存信件數目 (\d+) 超出上限 (\d+), 請整理/
+                const match = regex.exec(this.snapshot.GetString(23))
+                if (match) {
+                    this.mailCache.size = parseInt(match[1].toString(), 10)
+                    this.mailCache.maxSize = parseInt(match[2].toString(), 10)
+                }
                 [, stat] = await this.Send(Control.Left())
-                this.isMailOverflow = true
                 break
             case PTTState.MailList:
             case PTTState.Article:
@@ -399,11 +408,11 @@ export class LiPTT extends Client {
 
     public async getMoreArticleAbstract(count: number): Promise<ArticleAbstract[]> {
 
-        if (this.snapshotStat !== PTTState.Board) {
+        if (this.snapshotStat === PTTState.Article) {
             await this.Send(Control.Left())
         }
 
-        if (this.snapshotStat !== PTTState.Board) {
+        if (this.snapshotStat !== PTTState.Board || count <= 0) {
             return []
         }
 
@@ -486,39 +495,7 @@ export class LiPTT extends Client {
             }
 
             /// 文章狀態
-            let state: ReadState
-            switch (term.GetSubstring(i, 8, 9)) {
-            case "+":
-                state = ReadState.未讀
-                break
-            case "M":
-                state = ReadState.已標記
-                break
-            case "S":
-                state = ReadState.待處理
-                break
-            case "m":
-                state = ReadState.已讀 | ReadState.已標記
-                break
-            case "s":
-                state = ReadState.已讀 | ReadState.待處理
-                break
-            case "!":
-                state = ReadState.鎖定
-                break
-            case "~":
-                state = ReadState.新推文
-                break
-            case "=":
-                state = ReadState.新推文 | ReadState.已標記
-                break
-            case " ":
-                state = ReadState.已讀
-                break
-            default:
-                state = ReadState.未定義
-                break
-            }
+            const state: ReadState = this.getReadState(term.GetSubstring(i, 8, 9))
 
             /// 日期
             const dateStr = term.GetSubstring(i, 11, 16)
@@ -805,6 +782,31 @@ export class LiPTT extends Client {
         }
     }
 
+    private getReadState(s: string): ReadState {
+        switch (s) {
+        case "+":
+            return ReadState.未讀
+        case "M":
+            return ReadState.已標記
+        case "S":
+            return ReadState.待處理
+        case "m":
+            return ReadState.已讀 | ReadState.已標記
+        case "s":
+            return ReadState.已讀 | ReadState.待處理
+        case "!":
+            return ReadState.鎖定
+        case "~":
+            return ReadState.新推文
+        case "=":
+            return ReadState.新推文 | ReadState.已標記
+        case " ":
+            return ReadState.已讀
+        default:
+            return ReadState.未定義
+        }
+    }
+
     /** 判斷相交的偏移量 */
     private _intersectPrev(prev: Terminal, next: Terminal): number {
         function equalLine(p: Block[], q: Block[]) {
@@ -965,7 +967,7 @@ export class LiPTT extends Client {
         return [aid, url, coin]
     }
 
-    public async getMailList(): Promise<MailAbstract[]> {
+    public async enterMailList(): Promise<boolean> {
         let t: Terminal = this.snapshot
         let s: PTTState = this.snapshotStat
         while (s !== PTTState.MainPage) {
@@ -977,20 +979,109 @@ export class LiPTT extends Client {
             [t, s] = await this.WaitForNext()
         }
 
-        [t, s] = await this.Send(0x72)
-        while (s !== PTTState.MailList) {
-            [t, s] = await this.WaitForNext()
+        await this.Send(0x72)
+
+        let retry = 0
+        while (this.snapshotStat === PTTState.EasyTalk) {
+            if (retry >= 20) {
+                this.mailCache.size = 0
+                return false
+            }
+            await this.sleep(100)
+            retry++
         }
 
-        console.log("!!Mail List!!")
+        this.mailCache.clear()
+        const regex = /\(容量:\s*(\d+)\s*\/\s*(\d+)\s*篇\)/
+        const match = regex.exec(this.snapshot.GetString(2))
+        if (match) {
+            this.mailCache.size = parseInt(match[1].toString(), 10)
+            this.mailCache.maxSize = parseInt(match[2].toString(), 10)
+        }
 
-        return []
+        // get list like board do
+        let nStr = this.snapshot.GetSubstring(3, 0, 7)
+        if (nStr[0] === "●" || nStr[0] === ">") {
+            nStr = nStr.slice(1)
+        }
+        nStr = nStr.trim()
+        if (nStr !== "1") {
+            [t, s] = await this.Send(Control.Home())
+        }
+
+        return true
+    }
+
+    public async getMoreMailAbstract(count: number): Promise<MailAbstract[]> {
+
+        if (this.snapshotStat !== PTTState.MailList || count <= 0) {
+            return []
+        }
+
+        if (count <= this.mailCache.remain) {
+            return this.mailCache.getMore(count)
+        }
+
+        while (this.mailCache.hasMore && count > this.mailCache.remain) {
+            const [term] =
+                this.mailCache.isEmpty ?
+                (this.mailCache.size === 1 ? [this.snapshot] :  await this.Send(Control.End())) :
+                await this.Send(Control.PageUp())
+
+            const ans = await this._getMoreMailAbstract(term)
+            ans.forEach(i => this.mailCache.add(i))
+
+            const regex = /\(容量:\s*(\d+)\s*\/\s*(\d+)\s*篇\)/
+            const match = regex.exec(term.GetString(2))
+            if (match) {
+                this.mailCache.size = parseInt(match[1].toString(), 10)
+                this.mailCache.maxSize = parseInt(match[2].toString(), 10)
+            }
+        }
+
+        return this.mailCache.getMore(count)
+    }
+
+    private async _getMoreMailAbstract(term: Terminal): Promise<MailAbstract[]> {
+        const result: MailAbstract[] = []
+        for (let i = 22; i > 2; i--) {
+            let indexStr = term.GetSubstring(i, 0, 6).trim()
+            let index: number = 0
+
+            if (indexStr[0] === "●" || indexStr[0] === ">") {
+                indexStr =
+                    indexStr[1] === " " ?
+                    indexStr = indexStr.slice(2).trim() :
+                    (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
+            }
+
+            if (indexStr !== "") {
+                index = parseInt(indexStr, 10)
+            } else {
+                continue
+            }
+
+            const state: ReadState = this.getReadState(term.GetSubstring(i, 7, 8))
+            const dateStr = term.GetSubstring(i, 9, 14)
+            const author = term.GetSubstring(i, 15, 27).trim()
+            const title = term.GetSubstring(i, 30, 80).trim()
+
+            const item: MailAbstract = {
+                key: index,
+                date: dateStr,
+                author,
+                state,
+                title,
+            }
+            result.push(item)
+        }
+        return result
     }
 
     public async sendTestMail(username: string, subject: string, content: string): Promise<string> {
         let term: Terminal
         let stat: PTTState
-        if (this.isMailOverflow) {
+        if (this.mailCache.isOverflow) {
             return "信箱滿了 請整理"
         }
 
@@ -1035,10 +1126,7 @@ export class LiPTT extends Client {
     }
 
     public checkMail(): boolean {
-        if (this.snapshot.GetSubstring(0, 30, 48).trim() === "你有新信件") {
-            return true
-        }
-        return false
+        return this.newMail
     }
 
     public async left(): Promise<void> {
@@ -1073,6 +1161,10 @@ export class LiPTT extends Client {
             }
         })
     }
+
+    private async sleep(ms = 0) {
+        return new Promise(r => setTimeout(r, ms))
+      }
 
     public getState() {
         return this.snapshotStat

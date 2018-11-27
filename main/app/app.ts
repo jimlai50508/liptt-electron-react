@@ -309,9 +309,12 @@ export class App {
 
         ipcMain.on(ApiRoute.getMailList, async (_: EventEmitter) => {
             await lock.wait()
-            const result: MailAbstract[] = await this.client.getMailList()
+            const ok = await this.client.enterMailList()
+            if (ok) {
+                const result = await this.client.getMoreMailAbstract(40)
+                this.mainWindow.webContents.send(ApiRoute.getMailList, result)
+            }
             lock.signal()
-            this.mainWindow.webContents.send(ApiRoute.getMailList, result)
         })
 
         ipcMain.on(ApiRoute.terminalSnapshot, async (_: EventEmitter) => {

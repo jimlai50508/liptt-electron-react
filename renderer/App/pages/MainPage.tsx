@@ -117,7 +117,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
         // )
 
         setImmediate(async () => {
-            const hasEmail = await PromiseIpcRenderer.send<boolean>("/check-email")
+            const hasEmail = await PromiseIpcRenderer.send<boolean>(ApiRoute.checkMail)
             if (hasEmail) {
                 notification.config({placement: "bottomRight"})
                 setTimeout(() => {

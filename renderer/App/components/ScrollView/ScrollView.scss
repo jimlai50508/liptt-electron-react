@@ -2,7 +2,8 @@
 // reserve 寬度要大於新的 track 寬度
 $reserve: 20px;
 $trackWidth: 20px;
-$thumbWidth: 20px;
+$thumbWidth: 14px;
+$thumbColor: rgba(75, 211, 63, 0.7);
 
 .scrollView {
     overflow: hidden;
@@ -15,21 +16,21 @@ $thumbWidth: 20px;
         top: 0;
         right: 0;
         height: 100%;
-        background-color: cornflowerblue;
+        // background-color: cornflowerblue;
         .thumb {
             width: $thumbWidth;
             height: 18%;
             border-radius: $thumbWidth;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: $thumbColor;
             transition: background-color 0.2s;
             position: absolute;
-            left: calc(50% - #{$thumbWidth} / 2.0 + 0.5px);
+            left: calc(50% - #{$thumbWidth} / 2.0);
             z-index: 1;
             &.hide {
                 background-color: rgba(0, 0, 0, 0);
             }
             &:hover {
-                background-color: rgba(0, 0, 0, 0.7);
+                background-color: $thumbColor;
             }
             &:active,
             &:focus {
