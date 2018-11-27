@@ -16,7 +16,7 @@ export class Control {
     }
 
     public static Right() {
-        return Buffer.from([0x72])
+        return Buffer.from([0x1B, 0x5B, 0x43])
     }
 
     public static Left() {
@@ -118,8 +118,20 @@ export class Control {
         return Buffer.from([0x53, 0x0D])
     }
 
+    public static r() {
+        return Buffer.from([0x72])
+    }
+
+    public static CtrlC() {
+        return Buffer.from([0x03])
+    }
+
     public static CtrlU() {
         return Buffer.from([0x15])
+    }
+
+    public static CtrlP() {
+        return Buffer.from([0x10])
     }
 
     public static CtrlX() {

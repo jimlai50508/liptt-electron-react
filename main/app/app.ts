@@ -31,6 +31,7 @@ import {
     MailAbstract,
 } from "../model"
 import { ApiRoute } from "../model"
+import { Attribute, ForeColor } from "../model/terminal"
 
 export class App {
 
@@ -323,7 +324,10 @@ export class App {
 
         ipcMain.on(ApiRoute.googleSendMail, async (_: EventEmitter) => {
             await lock.wait()
-            const result = await this.client.sendTestMail("lightyan", "Test", "Hello World")
+            await this.client.enterMailList()
+
+            const data = Terminal.GetBytesWriteColor("Hello World Test NewLine", {attribute: Attribute.Bold, color: ForeColor.Red})
+            const result = await this.client.sendPttMail("lightyan", "Test NewLine", data)
             console.log(result)
             lock.signal()
             this.mainWindow.webContents.send(ApiRoute.googleSendMail, { message: "done" })

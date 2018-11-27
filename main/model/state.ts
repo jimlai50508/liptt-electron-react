@@ -69,7 +69,7 @@ export enum PTTState {
     /** 寄站內信 */
     SendMail,
     /** 信件標題 */
-    MailSubject,
+    SendMailSubject,
     /** 編輯文章或信件內容 */
     EditFile,
     /** 處理文章或信件 */
@@ -77,7 +77,7 @@ export enum PTTState {
     /** 選擇簽名檔 */
     Signature,
     /** 已順利寄出 */
-    MailSuccess,
+    SendMailSuccess,
     /** 編輯器自動復原 */
     UnsavedFile,
     /** 信箱滿出來了 */
@@ -160,7 +160,7 @@ export function StateString(s: PTTState): string {
         return "郵件選單"
     case PTTState.SendMail:
         return "寄站內信"
-    case PTTState.MailSubject:
+    case PTTState.SendMailSubject:
         return "輸入信件標題"
     case PTTState.EditFile:
         return "編輯文章或信件內容"
@@ -168,7 +168,7 @@ export function StateString(s: PTTState): string {
         return "處理文章或信件"
     case PTTState.Signature:
         return "選擇簽名檔"
-    case PTTState.MailSuccess:
+    case PTTState.SendMailSuccess:
         return "已順利寄出"
     case PTTState.UnsavedFile:
         return "編輯器自動復原"
@@ -229,7 +229,7 @@ export function StateFilter(t: Terminal) {
             return PTTState.MainPage
         }
     } else if (lines[22].startsWith("已順利寄出，是否自存底稿(Y/N)？")) {
-        return PTTState.MailSuccess
+        return PTTState.SendMailSuccess
     } else if (lines[22].includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
     } else if (lines[22].includes("您確定要離開")) {
@@ -273,7 +273,7 @@ export function StateFilter(t: Terminal) {
         return PTTState.EasyTalk
     } else if (lines[0].startsWith("【 站內寄信 】")) {
         if (lines[2].startsWith("主題：")) {
-            return PTTState.MailSubject
+            return PTTState.SendMailSubject
         }
         return PTTState.SendMail
     } else if (lines[0].startsWith("【 檔案處理 】")) {

@@ -7,9 +7,9 @@ export class Block {
     /** 區塊內容(值範圍:0~0xFF) */
     public Content: byte
     /** 背景色 */
-    public Background: number
+    public Background: BackColor
     /** 前景色 */
-    public Foreground: number
+    public Foreground: ForeColor
     /** 屬性樣式 */
     public Attribute: Attribute
 
@@ -36,8 +36,8 @@ export class Block {
     /** 判斷相等 */
     public Equal(b: Block) {
         return (this.Content === b.Content)
-        // && (this.Attribute === b.Attribute)
-        // && (this.Background === b.Background)
-        // && (this.Foreground === b.Foreground)
+        && (this.Attribute === b.Attribute)
+        && (this.Background === b.Background)
+        && (this.Foreground === b.Foreground)
     }
 }

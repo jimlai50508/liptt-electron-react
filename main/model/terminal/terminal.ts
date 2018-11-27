@@ -5,6 +5,12 @@ import { Attribute, ForeColor, BackColor } from "./color"
 export const TerminalWidth = 80
 export const TerminalHeight = 24
 
+export interface Color {
+    attribute?: Attribute
+    color?: ForeColor
+    background?: BackColor
+}
+
 type byte = number
 
 /** PTT的傳統Terminal畫面 */
@@ -523,6 +529,47 @@ export class Terminal {
         s = s.replace("©", "&copy;")
         s = s.replace("™", "&trade;")
         return s
+    }
+
+    public static GetBytesWriteColor(s: string, color: Color): Uint8Array {
+        const b = [0x03, 0x1B, 0x5B, 0x44]
+        if (color.attribute) {
+            if (color.attribute & Attribute.Bold) {
+                b.push(0x31, 0x3B)
+            }
+            if (color.attribute & Attribute.Underline) {
+                b.push(0x34, 0x3B)
+            }
+            if (color.attribute & Attribute.Blink) {
+                b.push(0x35, 0x3B)
+            }
+            if (color.attribute & Attribute.Reverse) {
+                b.push(0x37, 0x3B)
+            }
+            if (color.attribute & Attribute.Invisible) {
+                b.push(0x38, 0x3B)
+            }
+        }
+        if (color.color) {
+            const n = color.color
+            b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
+        }
+        if (color.background) {
+            const n = color.background
+            b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
+        }
+        b.push(0x1B, 0x5B, 0x43)
+        b.push(...Big5UAO.GetBytes(s))
+        b.push(0x03)
+        return new Uint8Array(b)
+    }
+
+    public static GetBytesFromContent(s: string) {
+        const regex = /(\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m)/
+        const lines = s.split("\n")
+        lines.map(str => {
+
+        })
     }
 }
 

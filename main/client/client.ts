@@ -4,6 +4,8 @@ import { Terminal } from "../model/terminal"
 import * as WebSocket from "ws"
 import { SocketState } from "../model"
 
+export type Data =  Buffer | Uint8Array | string | number
+
 /** PTT 客戶端 */
 export class Client extends EventEmitter {
 
@@ -88,7 +90,7 @@ export class Client extends EventEmitter {
     }
 
     /** 送出資料 */
-    protected send(data: Buffer | Uint8Array | string | number, ...optionalParams: any[]) {
+    protected send(data: Data, ...optionalParams: Data[]) {
         let buffer: Buffer
         if (optionalParams.length === 0) {
             if (typeof data === "object") {

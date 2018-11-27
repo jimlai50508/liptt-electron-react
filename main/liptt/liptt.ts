@@ -12,7 +12,7 @@ import {
     StateString,
     MailAbstract,
 } from "../model"
-import { Client, Control } from "../client"
+import { Client, Control, Data } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
 import { BoardCache } from "./boardCollection"
 import { MailCache } from "./mailCollection"
@@ -315,7 +315,7 @@ export class LiPTT extends Client {
             row = this.rowOfCursor(t)
             found = t.GetString(row).includes("即時熱門看板")
         }
-        [t, s] = await this.Send(Control.Right())
+        [t, s] = await this.Send(Control.r())
         const first = t.GetSubstring(3, 0, 2).trim()
         if (first !== "●" && first !== ">") {
             [t, s] = await this.Send(Control.Home())
@@ -591,7 +591,7 @@ export class LiPTT extends Client {
 
         [t, s] = await this.goToArticle(a.aid)
         if (s === PTTState.Board) {
-            [t, s] = await this.Send(Control.Right())
+            [t, s] = await this.Send(Control.r())
         } else {
             await this.Send(Control.AnyKey())
             h.deleted = true
@@ -1078,6 +1078,50 @@ export class LiPTT extends Client {
         return result
     }
 
+    public async sendPttMail(username: string, subject: string, content: Uint8Array): Promise<boolean> {
+        if (this.snapshotStat !== PTTState.MailList) {
+            return false
+        }
+
+        let [_, s] = await this.Send(Control.CtrlP())
+        while (s !== PTTState.SendMail) {
+            await this.WaitForNext()
+        }
+
+        [_, s] = await this.Send(username, 0x0D)
+        while (s !== PTTState.SendMailSubject) {
+            await this.WaitForNext()
+        }
+
+        [_, s] = await this.Send(subject, 0x0D)
+        while (s !== PTTState.EditFile) {
+            await this.WaitForNext()
+        }
+
+        [_, s] = await this.Send(content);
+        [_, s] = await this.Send(Control.CtrlX())
+        while (s !== PTTState.ProcessFile) {
+            await this.WaitForNext()
+        }
+
+        let sign = false;
+        [_, s] = await this.Send(0x73, 0x0D)
+        while (s !== PTTState.SendMailSuccess) {
+            if (s === PTTState.Signature && !sign) {
+                sign = true;
+                [_, s] = await this.Send(0x30, 0x0D) // 不加簽名檔
+            }
+        }
+
+        await this.Send(Control.No()); // 不儲存草稿
+        [_, s] = await this.Send(Control.AnyKey())
+        while (s !== PTTState.MailList) {
+            await this.WaitForNext()
+        }
+
+        return true
+    }
+
     public async sendTestMail(username: string, subject: string, content: string): Promise<string> {
         let term: Terminal
         let stat: PTTState
@@ -1089,7 +1133,7 @@ export class LiPTT extends Client {
         await this.Send(Control.SendMail());
         [term, stat] = await this.Send(username, 0x0D)
 
-        while (stat !== PTTState.MailSubject) {
+        while (stat !== PTTState.SendMailSubject) {
             if (stat === PTTState.PersonMail) {
                 await this.Send(Control.Left())
                 return "使用者不存在"
@@ -1109,7 +1153,7 @@ export class LiPTT extends Client {
         }
 
         [term, stat] = await this.Send(0x73, 0x0D)
-        while (stat !== PTTState.MailSuccess) {
+        while (stat !== PTTState.SendMailSuccess) {
             if (stat === PTTState.Signature) {
                 [term, stat] = await this.Send(0x30, 0x0D)
                 continue
@@ -1141,12 +1185,12 @@ export class LiPTT extends Client {
         })
     }
 
-    private Send(data: Buffer | Uint8Array | string | number, ...optionalParams: any[]): Promise<[Terminal, PTTState]> {
+    private Send(data: Data, ...optionalParams: Data[]): Promise<[Terminal, PTTState]> {
         return new Promise((resolve) => {
             this.once("StateUpdated", (term: Terminal, stat: PTTState) => {
                 resolve([term.DeepCopy(), stat])
             })
-            this.send(data, optionalParams)
+            this.send(data, ...optionalParams)
         })
     }
 
