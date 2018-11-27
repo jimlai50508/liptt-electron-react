@@ -2,6 +2,7 @@ import React, { Component } from "react"
 import { Button } from "antd"
 import * as style from "./CSSPage.scss"
 import { ipcRenderer } from "electron"
+import { PromiseIpcRenderer, ApiRoute } from "model"
 
 interface ComponentProps {
 
@@ -19,7 +20,7 @@ export class CSSPage extends Component<ComponentProps, ComponentState> {
     }
 
     private sendTest() {
-        ipcRenderer.send("/google/send-mail")
+        PromiseIpcRenderer.send(ApiRoute.googleSendMail)
     }
 
     public render() {

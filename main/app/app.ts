@@ -28,7 +28,9 @@ import {
     PTTState,
     SocketState,
     Terminal,
+    MailAbstract,
 } from "../model"
+import { ApiRoute } from "../model"
 
 export class App {
 
@@ -211,74 +213,74 @@ export class App {
     private addAPI() {
         const lock = new Semaphore(1)
 
-        ipcMain.on("/storage/load/user", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.loadUserInfo, async (_: EventEmitter) => {
             await lock.wait()
             const u = UserStorage.User
-            this.mainWindow.webContents.send("/storage/load/user", u)
+            this.mainWindow.webContents.send(ApiRoute.loadUserInfo, u)
             lock.signal()
         })
 
-        ipcMain.on("/logout", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.logout, async (_: EventEmitter) => {
             await this.client.logout()
         })
 
-        ipcMain.on("/login", async (_: EventEmitter, u: User) => {
+        ipcMain.on(ApiRoute.login, async (_: EventEmitter, u: User) => {
             await lock.wait()
             if (u.username && u.password) {
                 const s = await this.client.login(u.username, u.password)
-                this.mainWindow.webContents.send("/login", s)
+                this.mainWindow.webContents.send(ApiRoute.login, s)
                 if (s === PTTState.MainPage) {
                     UserStorage.User = u
                 }
             } else {
-                this.mainWindow.webContents.send("/login", PTTState.WrongPassword)
+                this.mainWindow.webContents.send(ApiRoute.login, PTTState.WrongPassword)
             }
             lock.signal()
         })
 
-        ipcMain.on("/check-email", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.checkMail, async (_: EventEmitter) => {
             await lock.wait()
-            const result = this.client.checkEmail()
-            this.mainWindow.webContents.send("/check-email", result)
+            const result = this.client.checkMail()
+            this.mainWindow.webContents.send(ApiRoute.checkMail, result)
             lock.signal()
         })
 
-        ipcMain.on("/favor", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.getFavoriteList, async (_: EventEmitter) => {
             await lock.wait()
             const data: FavoriteItem[] = await this.client.getFavorite()
-            this.mainWindow.webContents.send("/favor", data)
+            this.mainWindow.webContents.send(ApiRoute.getFavoriteList, data)
             lock.signal()
         })
 
-        ipcMain.on("/hot", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.getHotList, async (_: EventEmitter) => {
             await lock.wait()
-            const data: HotItem[] = await this.client.getHot()
-            this.mainWindow.webContents.send("/hot", data)
+            const data: HotItem[] = await this.client.getHotList()
+            this.mainWindow.webContents.send(ApiRoute.getHotList, data)
             lock.signal()
         })
 
         /// 進入看板
-        ipcMain.on("/board", async (_: EventEmitter, board: string) => {
+        ipcMain.on(ApiRoute.goBoard, async (_: EventEmitter, board: string) => {
             await lock.wait()
             const result = await this.client.enterBoard(board)
-            this.mainWindow.webContents.send("/board", result)
+            this.mainWindow.webContents.send(ApiRoute.goBoard, result)
             lock.signal()
         })
 
         /// 取得文章列表
-        ipcMain.on("/board/get-more", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.getMoreBoard, async (_: EventEmitter) => {
             await lock.wait()
             const result = await this.client.getMoreArticleAbstract(30)
             RendererConsole.warn(result)
-            this.mainWindow.webContents.send("/board/get-more", result)
+            this.mainWindow.webContents.send(ApiRoute.getMoreBoard, result)
             lock.signal()
         })
 
         /// 取得文章資訊
-        ipcMain.on("/board/article-header", async (_: EventEmitter, ab: ArticleAbstract) => {
+        ipcMain.on(ApiRoute.getBoardArticleHeader, async (_: EventEmitter, ab: ArticleAbstract) => {
             await lock.wait()
-            const header = await this.client.getArticleHeader(ab)
-            this.mainWindow.webContents.send("/board/article-header", header)
+            const header = await this.client.getBoardArticleHeader(ab)
+            this.mainWindow.webContents.send(ApiRoute.getBoardArticleHeader, header)
             lock.signal()
         })
 
@@ -291,29 +293,37 @@ export class App {
         // })
 
         /// 進入文章，取得文章內容
-        ipcMain.on("/article/get-more", async (_: EventEmitter, h: ArticleHeader) => {
+        ipcMain.on(ApiRoute.getMoreArticle, async (_: EventEmitter, h: ArticleHeader) => {
             await lock.wait()
             const ans = await this.client.getMoreArticleContent(h)
-            this.mainWindow.webContents.send("/article/get-more", ans)
+            this.mainWindow.webContents.send(ApiRoute.getMoreArticle, ans)
             lock.signal()
         })
 
-        ipcMain.on("/left", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.left, async (_: EventEmitter) => {
             await lock.wait()
             await this.client.left()
-            this.mainWindow.webContents.send("/left")
+            this.mainWindow.webContents.send(ApiRoute.left, { message: "done" })
             lock.signal()
         })
 
-        ipcMain.on("/terminal-snapshot", async (_: EventEmitter) => {
-            this.mainWindow.webContents.send("/terminal-snapshot", this.client.GetTerminalSnapshot())
+        ipcMain.on(ApiRoute.getMailList, async (_: EventEmitter) => {
+            await lock.wait()
+            const result: MailAbstract[] = await this.client.getMailList()
+            lock.signal()
+            this.mainWindow.webContents.send(ApiRoute.getMailList, result)
         })
 
-        ipcMain.on("/google/send-mail", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.terminalSnapshot, async (_: EventEmitter) => {
+            this.mainWindow.webContents.send(ApiRoute.terminalSnapshot, this.client.GetTerminalSnapshot())
+        })
+
+        ipcMain.on(ApiRoute.googleSendMail, async (_: EventEmitter) => {
             await lock.wait()
             const result = await this.client.sendTestMail("lightyan", "Test", "Hello World")
             console.log(result)
             lock.signal()
+            this.mainWindow.webContents.send(ApiRoute.googleSendMail, { message: "done" })
             // const g = new Google()
             // try {
             //     const lines: string[] = []
@@ -327,13 +337,13 @@ export class App {
             // }
         })
 
-        ipcMain.on("/is-dev-mode", async (_: EventEmitter) => {
+        ipcMain.on(ApiRoute.testDevMode, async (_: EventEmitter) => {
             const dev = isDevMode()
-            this.mainWindow.webContents.send("/is-dev-mode", dev)
+            this.mainWindow.webContents.send(ApiRoute.testDevMode, dev)
         })
 
         this.client.on("socket", (state: SocketState) => {
-            this.mainWindow.webContents.send("/socket", state)
+            this.mainWindow.webContents.send(ApiRoute.socketEvent, state)
         })
     }
 }

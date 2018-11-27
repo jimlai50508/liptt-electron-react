@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import { Table } from "antd"
 import { ColumnProps } from "antd/lib/table"
-import { FavoriteItem, PromiseIpcRenderer } from "model"
+import { FavoriteItem, PromiseIpcRenderer, ApiRoute } from "model"
 
 const columns: Array<ColumnProps<FavoriteItem>> = [
     {
@@ -43,7 +43,7 @@ export class Favorite extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<FavoriteItem[]>("/favor")
+        PromiseIpcRenderer.send<FavoriteItem[]>(ApiRoute.getFavoriteList)
         .then((items) => {
             this.setState((prev, _) => ({...prev, data: items, loading: false}))
         })

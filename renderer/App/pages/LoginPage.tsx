@@ -3,8 +3,7 @@ import { Redirect } from "react-router-dom"
 import autobind from "autobind-decorator"
 import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
-import { ipcRenderer, EventEmitter } from "electron"
-import { PromiseIpcRenderer, User, PTTState, StateString } from "model"
+import { PromiseIpcRenderer, User, PTTState, StateString, ApiRoute } from "model"
 
 interface ComponentProps {
 
@@ -38,8 +37,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        console.log("login Page")
-        PromiseIpcRenderer.send<User>("/storage/load/user")
+        PromiseIpcRenderer.send<User>(ApiRoute.loadUserInfo)
         .then(u => {
             if (u && u.username && u.password) {
                 this.loadUser(u)
@@ -71,7 +69,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
             username: this.state.username,
             password: this.state.password,
         }
-        PromiseIpcRenderer.send<PTTState>("/login", user)
+        PromiseIpcRenderer.send<PTTState>(ApiRoute.login, user)
         .then((s: PTTState) => {
             if (s === PTTState.MainPage) {
                 this.setState((prev, _) => ({...prev, loading: false, logined: true}))

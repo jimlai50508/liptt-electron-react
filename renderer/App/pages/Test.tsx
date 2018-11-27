@@ -4,7 +4,7 @@ import autobind from "autobind-decorator"
 import { ScrollView } from "../components/ScrollView/ScrollView"
 import { Row, Button } from "antd"
 import Semaphore from "semaphore-async-await"
-import { ArticleAbstract, ArticleHeader, PromiseIpcRenderer } from "model"
+import { ArticleAbstract, PromiseIpcRenderer, ApiRoute } from "model"
 import { Block, toString } from "model"
 import * as style from "./Test.scss"
 
@@ -26,7 +26,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
     private ih: number = 30
 
     public async componentDidMount() {
-        const r = await PromiseIpcRenderer.send<boolean>("/board", "Test")
+        const r = await PromiseIpcRenderer.send<boolean>(ApiRoute.goBoard, "Test")
         this.setState((prev, _) => ({...prev, ready: r}))
     }
 

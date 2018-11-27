@@ -118,6 +118,10 @@ export class Control {
         return Buffer.from([0x53, 0x0D])
     }
 
+    public static CtrlU() {
+        return Buffer.from([0x15])
+    }
+
     public static CtrlX() {
         return Buffer.from([0x18])
     }

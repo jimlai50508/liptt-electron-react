@@ -1,7 +1,7 @@
 import React, { Component } from "react"
 import { Table } from "antd"
 import { ColumnProps } from "antd/lib/table"
-import { HotItem, PromiseIpcRenderer } from "model"
+import { HotItem, PromiseIpcRenderer, ApiRoute } from "model"
 
 const columns: Array<ColumnProps<HotItem>> = [
     {
@@ -49,7 +49,7 @@ export class Hot extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<HotItem[]>("/hot")
+        PromiseIpcRenderer.send<HotItem[]>(ApiRoute.getHotList)
         .then((items) => {
             if (!this.umount) {
                 this.setState((prev, _) => ({...prev, data: items, loading: false}))

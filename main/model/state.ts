@@ -60,6 +60,8 @@ export enum PTTState {
     ExitConcern,
     /** 找不到這個文章代碼 */
     AIDNotFound,
+    /** 使用者列表 */
+    EasyTalk,
     /** 個人信箱 */
     PersonMail,
     /** 郵件清單 */
@@ -150,6 +152,8 @@ export function StateString(s: PTTState): string {
         return "確定要離開"
     case PTTState.AIDNotFound:
         return "找不到文章代碼"
+    case PTTState.EasyTalk:
+        return "休閒聊天（使用者列表）"
     case PTTState.PersonMail:
         return "個人信箱"
     case PTTState.MailList:
@@ -221,8 +225,9 @@ export function StateFilter(t: Terminal) {
     } else if (t.GetSubstring(23, 66, 74) === "[呼叫器]") {
         if (lines[0].startsWith("【電子郵件】")) {
             return PTTState.PersonMail
+        } else if (lines[0].startsWith("【主功能表】")) {
+            return PTTState.MainPage
         }
-        return PTTState.MainPage
     } else if (lines[22].startsWith("已順利寄出，是否自存底稿(Y/N)？")) {
         return PTTState.MailSuccess
     } else if (lines[22].includes("您想刪除其他重複登入的連線嗎")) {
@@ -264,6 +269,8 @@ export function StateFilter(t: Terminal) {
         return PTTState.Board
     } else if (lines[0].startsWith("【分類看板】"))  {
         return PTTState.Category
+    } else if (lines[0].startsWith("【休閒聊天】"))  {
+        return PTTState.EasyTalk
     } else if (lines[0].startsWith("【 站內寄信 】")) {
         if (lines[2].startsWith("主題：")) {
             return PTTState.MailSubject
@@ -288,9 +295,9 @@ export function StateFilter(t: Terminal) {
             return PTTState.MailOverflow
         }
         return PTTState.AnyKey
-    } else {
-        return PTTState.WhereAmI
     }
+
+    return PTTState.WhereAmI
 }
 
 function testBoard(line0: string, line1: string): boolean {

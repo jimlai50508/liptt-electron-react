@@ -10,6 +10,7 @@ import {
     StateFilter,
     SocketState,
     StateString,
+    MailAbstract,
 } from "../model"
 import { Client, Control } from "../client"
 import { Terminal, Block, TerminalHeight } from "../model/terminal"
@@ -127,10 +128,10 @@ export class LiPTT extends Client {
             s = await waitState()
         }
 
-        return this.Login(user, pass)
+        return this._login(user, pass)
     }
 
-    private async Login(user: string, pass: string): Promise<PTTState> {
+    private async _login(user: string, pass: string): Promise<PTTState> {
         let [, stat] = await this.Send(user, 0x0D)
 
         if (stat !== PTTState.Password) {
@@ -147,26 +148,36 @@ export class LiPTT extends Client {
             switch (stat) {
             case PTTState.Log:
                 [, stat] = await this.Send(Control.No()) // 刪除錯誤的登入紀錄
+                while (stat === PTTState.Log) {
+                    [, stat] = await this.WaitForNext()
+                }
                 break
             case PTTState.AlreadyLogin:
                 [, stat] = await this.Send(Control.Yes()) // 刪除重複的連線
+                while (stat === PTTState.AlreadyLogin) {
+                    [, stat] = await this.WaitForNext()
+                }
                 break
             case PTTState.UnsavedFile:
                 [, stat] = await this.Send("q", 0x0D) // 文章或信件尚未完成，不儲存
+                while (stat === PTTState.UnsavedFile) {
+                    [, stat] = await this.WaitForNext()
+                }
                 break
             case PTTState.MailOverflow:
-                [, stat] = await this.Send(Control.AnyKey())
+                [, stat] = await this.Send(Control.Left())
                 this.isMailOverflow = true
                 break
             case PTTState.MailList:
-            case PTTState.PersonMail:
-                [, stat] = await this.Send(0x71)
-                break
+            case PTTState.Article:
+            case PTTState.Favorite:
+            case PTTState.Hot:
             case PTTState.AnyKey:
-                [, stat] = await this.Send(Control.AnyKey())
+                [, stat] = await this.Send(Control.Left())
                 break
             default:
                 [, stat] = await this.WaitForNext()
+                break
             }
         }
         return stat
@@ -277,7 +288,7 @@ export class LiPTT extends Client {
         return items
     }
 
-    public async getHot(): Promise<HotItem[]> {
+    public async getHotList(): Promise<HotItem[]> {
         let t: Terminal = this.snapshot
         let s: PTTState = this.snapshotStat
         while (s !== PTTState.MainPage) {
@@ -288,12 +299,12 @@ export class LiPTT extends Client {
 
         const items: HotItem[] = []
         let row = this.rowOfCursor(t)
-        let right = t.GetString(row).includes("即時熱門看板")
+        let found = t.GetString(row).includes("即時熱門看板")
 
-        while (!right) {
-            [t, s] = await this.Send(Control.Down())
+        while (!found) {
+            [t, s] = await this.Send(Control.Up())
             row = this.rowOfCursor(t)
-            right = t.GetString(row).includes("即時熱門看板")
+            found = t.GetString(row).includes("即時熱門看板")
         }
         [t, s] = await this.Send(Control.Right())
         const first = t.GetSubstring(3, 0, 2).trim()
@@ -356,13 +367,10 @@ export class LiPTT extends Client {
         }
 
         let t: Terminal
-        let s: PTTState
+        let s: PTTState = this.snapshotStat
 
-        if (this.snapshotStat !== PTTState.MainPage) {
+        while (s !== PTTState.MainPage) {
             [t, s] = await this.Send(Control.Left())
-            while (s !== PTTState.MainPage) {
-                [t, s] = await this.Send(Control.Left())
-            }
         }
 
         [t, s] = await this.Send(Control.BoardSuggest())
@@ -584,7 +592,7 @@ export class LiPTT extends Client {
         return result
     }
 
-    public async getArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
+    public async getBoardArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
 
         let h: ArticleHeader = {
             hasHeader: false,
@@ -957,6 +965,28 @@ export class LiPTT extends Client {
         return [aid, url, coin]
     }
 
+    public async getMailList(): Promise<MailAbstract[]> {
+        let t: Terminal = this.snapshot
+        let s: PTTState = this.snapshotStat
+        while (s !== PTTState.MainPage) {
+            [t, s] = await this.Send(Control.Left())
+        }
+
+        [t, s] = await this.Send(Control.CtrlU())
+        while (s !== PTTState.EasyTalk) {
+            [t, s] = await this.WaitForNext()
+        }
+
+        [t, s] = await this.Send(0x72)
+        while (s !== PTTState.MailList) {
+            [t, s] = await this.WaitForNext()
+        }
+
+        console.log("!!Mail List!!")
+
+        return []
+    }
+
     public async sendTestMail(username: string, subject: string, content: string): Promise<string> {
         let term: Terminal
         let stat: PTTState
@@ -1004,7 +1034,7 @@ export class LiPTT extends Client {
         return "寄信成功"
     }
 
-    public checkEmail(): boolean {
+    public checkMail(): boolean {
         if (this.snapshot.GetSubstring(0, 30, 48).trim() === "你有新信件") {
             return true
         }

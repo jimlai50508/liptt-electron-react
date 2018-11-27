@@ -5,7 +5,7 @@ import { Icon } from "antd"
 import { version as antdVersion } from "antd"
 import { Layout, Menu, Button, Row, Col, notification } from "antd"
 import { ClickParam } from "antd/lib/menu"
-import { PromiseIpcRenderer, SocketState } from "model"
+import { PromiseIpcRenderer, ApiRoute, SocketState } from "model"
 import style from "./MainPage.scss"
 import { Hot } from "./Hot"
 import { Favorite } from "./Favorite"
@@ -14,6 +14,7 @@ import { Test } from "./Test"
 import { LegacyTerminal } from "./LegacyTerminal"
 import { AnimePage } from "./AnimePage"
 import { CSSPage } from "./CSSPage"
+import { MailPage } from "./MailPage"
 
 import { reaction, when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
@@ -51,7 +52,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     @autobind
     private onLogout(e: MouseEvent<HTMLElement>) {
-        PromiseIpcRenderer.send("/logout")
+        PromiseIpcRenderer.send(ApiRoute.logout)
         this.setState((prev, _) => ({...prev, logout: true}))
     }
 
@@ -72,6 +73,8 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                 return <Favorite/>
             case "Test":
                 return <Test />
+            case "Mail":
+                return <MailPage />
             case "Snapshot":
                 return <LegacyTerminal />
             case "Anime":
@@ -150,6 +153,10 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                         <Menu.Item key="Favorite">
                             <Icon type="star" />
                             <span>我的最愛</span>
+                        </Menu.Item>
+                        <Menu.Item key="Mail" >
+                            <Icon type="mail" />
+                            <span>郵件信箱</span>
                         </Menu.Item>
                         <Menu.Item key="Test" >
                             <Icon type="profile" />

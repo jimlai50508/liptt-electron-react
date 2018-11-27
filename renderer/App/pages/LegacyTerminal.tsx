@@ -1,6 +1,6 @@
 
 import React, { Component } from "react"
-import { PromiseIpcRenderer } from "model"
+import { PromiseIpcRenderer, ApiRoute } from "model"
 import * as style from "./LegacyTerminal.scss"
 import "./LegacyTerminal.css"
 
@@ -14,7 +14,7 @@ interface ComponentState {
 export class LegacyTerminal extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<string>("/terminal-snapshot")
+        PromiseIpcRenderer.send<string>(ApiRoute.terminalSnapshot)
         .then((ans) => {
             this.setState((prev, _) => ({htmlContent: ans}))
         })
