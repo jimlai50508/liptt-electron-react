@@ -1083,38 +1083,38 @@ export class LiPTT extends Client {
             return false
         }
 
-        let [_, s] = await this.Send(Control.CtrlP())
+        let [, s] = await this.Send(Control.CtrlP())
         while (s !== PTTState.SendMail) {
             await this.WaitForNext()
         }
 
-        [_, s] = await this.Send(username, 0x0D)
+        [, s] = await this.Send(username, 0x0D)
         while (s !== PTTState.SendMailSubject) {
             await this.WaitForNext()
         }
 
-        [_, s] = await this.Send(subject, 0x0D)
+        [, s] = await this.Send(subject, 0x0D)
         while (s !== PTTState.EditFile) {
             await this.WaitForNext()
         }
 
-        [_, s] = await this.Send(content);
-        [_, s] = await this.Send(Control.CtrlX())
+        [, s] = await this.Send(content);
+        [, s] = await this.Send(Control.CtrlX())
         while (s !== PTTState.ProcessFile) {
             await this.WaitForNext()
         }
 
         let sign = false;
-        [_, s] = await this.Send(0x73, 0x0D)
+        [, s] = await this.Send(0x73, 0x0D)
         while (s !== PTTState.SendMailSuccess) {
             if (s === PTTState.Signature && !sign) {
                 sign = true;
-                [_, s] = await this.Send(0x30, 0x0D) // 不加簽名檔
+                [, s] = await this.Send(0x30, 0x0D) // 不加簽名檔
             }
         }
 
         await this.Send(Control.No()); // 不儲存草稿
-        [_, s] = await this.Send(Control.AnyKey())
+        [, s] = await this.Send(Control.AnyKey())
         while (s !== PTTState.MailList) {
             await this.WaitForNext()
         }
