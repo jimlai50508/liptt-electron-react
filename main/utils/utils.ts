@@ -62,3 +62,11 @@ export class LogFile {
         LogFile.store.set("log", [])
     }
 }
+
+function encodeBase64(s: string) {
+    return btoa(encodeURI(s))
+}
+
+function decodeBase64(s: string) {
+    return decodeURI(atob(s))
+}
