@@ -34,24 +34,25 @@ import { Attribute, ForeColor } from "../model/terminal"
 
 import {
     graphql,
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLString,
+    buildSchema,
+    // GraphQLSchema,
+    // GraphQLObjectType,
+    // GraphQLString,
 } from "graphql"
 
-const schema = new GraphQLSchema({
-    query: new GraphQLObjectType({
-        name: "RootQueryType",
-        fields: {
-            hello: {
-                type: GraphQLString,
-                resolve() {
-                    return "world"
-                },
-            },
-        },
-    }),
-})
+// const schema = new GraphQLSchema({
+//     query: new GraphQLObjectType({
+//         name: "RootQueryType",
+//         fields: {
+//             hello: {
+//                 type: GraphQLString,
+//                 resolve() {
+//                     return "world"
+//                 },
+//             },
+//         },
+//     }),
+// })
 
 export class App {
 
@@ -366,7 +367,19 @@ export class App {
 
         ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, query: string) => {
             await lock.wait()
-            const result = await graphql(schema, query)
+            const schema = buildSchema(`
+            type Query {
+                hello: String
+            }
+            `)
+
+            const root = {
+                hello: () => {
+                  return "Hello world!"
+                },
+            }
+
+            const result = await graphql(schema, query, root)
             this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
             lock.signal()
         })
