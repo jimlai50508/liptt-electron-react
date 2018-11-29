@@ -2,7 +2,7 @@
     "name": "liptt-electron-react",
     "version": "0.0.1",
     "main": "dist/main/index.js",
-    "license": "GPL-2.0-only",
+    "license": "GPL-2.0",
     "author": {
         "name": "lightyen",
         "email": "lightyen0123@gmail.com"
