@@ -163,9 +163,9 @@ export function StateString(s: PTTState): string {
     case PTTState.SendMailSubject:
         return "輸入信件標題"
     case PTTState.EditFile:
-        return "編輯文章或信件內容"
+        return "編輯文章"
     case PTTState.ProcessFile:
-        return "處理文章或信件"
+        return "處理文章"
     case PTTState.Signature:
         return "選擇簽名檔"
     case PTTState.SendMailSuccess:

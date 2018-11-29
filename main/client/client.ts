@@ -197,8 +197,7 @@ export class Client extends EventEmitter {
                         this.queue.push(this.n)
                     }
                     if (this.queue.length === 0) {
-                        this.terminal.DefaultCurrentAttribute()
-                        this.terminal.DefaultCurrentColor()
+                        this.terminal.DefaultCurrentStyle()
                     }
 
                     while (this.queue.length > 0) {

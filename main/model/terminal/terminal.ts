@@ -1,15 +1,9 @@
 import { Big5UAO, big5HalfWidthList } from "../../encoding"
 import { Block } from "./block"
-import { Attribute, ForeColor, BackColor } from "./color"
+import { Color, Attribute } from "./color"
 
 export const TerminalWidth = 80
 export const TerminalHeight = 24
-
-export interface Color {
-    attribute?: Attribute
-    color?: ForeColor
-    background?: BackColor
-}
 
 type byte = number
 
@@ -25,19 +19,13 @@ export class Terminal {
     private saveCol: number
     /** 暫存的游標位置(Y座標) */
     private saveRow: number
-    /** 代表當前游標的前景顏色 */
-    private curF: ForeColor
-    /** 代表當前游標的背景顏色 */
-    private curB: BackColor
-    /** 代表當前游標的樣式 */
-    private curA: Attribute
+    /** 代表當前游標的顏色 */
+    private curColor: Color
 
     constructor() {
         this.col = 0
         this.row = 0
-        this.curF = ForeColor.White
-        this.curB = BackColor.Black
-        this.curA = Attribute.None
+        this.curColor = new Color()
         this.saveCol = 0
         this.saveRow = 0
         this.content = []
@@ -213,8 +201,7 @@ export class Terminal {
         if (this.col < TerminalWidth) {
             this.col++
         } else if (this.row < TerminalHeight) {
-            this.DefaultCurrentAttribute()
-            this.DefaultCurrentColor()
+            this.DefaultCurrentStyle()
             this.col = 0
             this.row++
         }
@@ -235,98 +222,21 @@ export class Terminal {
     /** 從當前字塊插入資料 */
     public Insert(data: number) {
         const b = this.content[this.row][this.col]
-        b.Attribute = this.curA
-        b.Foreground = this.curF
-        b.Background = this.curB
+        b.Attribute = this.curColor.attribute
+        b.Foreground = this.curColor.color
+        b.Background = this.curColor.background
         b.Content = data
         this.Next()
     }
 
-    /** 重設當前屬性 */
-    public DefaultCurrentAttribute() {
-        this.curA = Attribute.None
-    }
-
     /** 重設當前文字及背景 */
-    public DefaultCurrentColor() {
-        this.curF = ForeColor.White
-        this.curB = BackColor.Black
+    public DefaultCurrentStyle() {
+        this.curColor.default()
     }
 
     /** 設定當前字塊樣式(屬性, 文字, 背景 ...) */
     public SetCurrentStyle(style: number) {
-        switch (style) {
-        case 0:
-            this.DefaultCurrentAttribute()
-            this.DefaultCurrentColor()
-            break
-        case 1:
-            this.curA |= Attribute.Bold
-            break
-        case 4:
-            this.curA |= Attribute.Underline
-            break
-        case 5:
-            this.curA |= Attribute.Blink
-            break
-        case 7:
-            this.curA |= Attribute.Reverse
-            break
-        case 8:
-            this.curA |= Attribute.Invisible
-            break
-        case 30:
-            this.curF = ForeColor.Black
-            break
-        case 31:
-            this.curF = ForeColor.Red
-            break
-        case 32:
-            this.curF = ForeColor.Green
-            break
-        case 33:
-            this.curF = ForeColor.Yellow
-            break
-        case 34:
-            this.curF = ForeColor.Blue
-            break
-        case 35:
-            this.curF = ForeColor.Purple
-            break
-        case 36:
-            this.curF = ForeColor.Cyan
-            break
-        case 37:
-            this.curF = ForeColor.White
-            break
-        case 40:
-            this.curB = BackColor.Black
-            break
-        case 41:
-            this.curB = BackColor.Red
-            break
-        case 42:
-            this.curB = BackColor.Green
-            break
-        case 43:
-            this.curB = BackColor.Yellow
-            break
-        case 44:
-            this.curB = BackColor.Blue
-            break
-        case 45:
-            this.curB = BackColor.Purple
-            break
-        case 46:
-            this.curB = BackColor.Cyan
-            break
-        case 47:
-            this.curB = BackColor.White
-            break
-        case 48:
-            this.curB = BackColor.HighRed
-            break
-        }
+        this.curColor.setStyle(style)
     }
 
     /** 深層副本 */
@@ -342,9 +252,10 @@ export class Terminal {
         }
         term.col = this.col
         term.row = this.row
-        term.curA = this.curA
-        term.curB = this.curB
-        term.curF = this.curF
+        term.curColor = new Color()
+        term.curColor.attribute = this.curColor.attribute
+        term.curColor.color = this.curColor.color
+        term.curColor.background = this.curColor.background
         term.saveCol = this.saveCol
         term.saveRow = this.saveRow
         return term
@@ -531,9 +442,9 @@ export class Terminal {
         return s
     }
 
-    public static GetBytesWriteColor(s: string, color: Color): Uint8Array {
+    private static GetBytesWriteColor(s: string, color: Color): byte[] {
         const b = [0x03, 0x1B, 0x5B, 0x44]
-        if (color.attribute) {
+        if ("attribute" in color) {
             if (color.attribute & Attribute.Bold) {
                 b.push(0x31, 0x3B)
             }
@@ -550,26 +461,57 @@ export class Terminal {
                 b.push(0x38, 0x3B)
             }
         }
-        if (color.color) {
+        if ("color" in color) {
             const n = color.color
             b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
         }
-        if (color.background) {
+        if ("background" in color) {
             const n = color.background
             b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
         }
         b.push(0x1B, 0x5B, 0x43)
         b.push(...Big5UAO.GetBytes(s))
         b.push(0x03)
-        return new Uint8Array(b)
+        return b
     }
 
-    public static GetBytesFromContent(s: string) {
-        const regex = /(\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m)/
+    public static GetBytesFromContent(s: string): Uint8Array {
         const lines = s.split("\n")
-        lines.map(str => {
+        const data: number[] = []
 
-        })
+        for (const l of lines) {
+            if (l) {
+                for (const seg of l.split(/(\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m)/)) {
+                    if (/^\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m$/.test(seg)) {
+                        const color: Color = new Color()
+                        let start = 2
+                        let c = 0
+                        for (; start < seg.length; start++) {
+                            if (seg[start] === "m") {
+                                break
+                            }
+                            if (seg[start] === ";") {
+                                color.setStyle(c)
+                                c = 0
+                                continue
+                            }
+                            const t = parseInt(seg[start], 10)
+                            if (t) {
+                                c = c * 10 + t
+                            }
+                        }
+                        const a = start + 1
+                        const b = seg.length - a - 3
+                        data.push(...Terminal.GetBytesWriteColor(seg.substr(a, b), color))
+
+                    } else {
+                        data.push(...Big5UAO.GetBytes(seg))
+                    }
+                }
+            }
+            data.push(0x0D)
+        }
+        return new Uint8Array(data)
     }
 }
 

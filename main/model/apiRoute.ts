@@ -22,4 +22,6 @@ export class ApiRoute {
     public static readonly googleSendMail = "/google/send-mail"
     public static readonly testDevMode = "/is-dev-mode"
     public static readonly socketEvent = "/socket"
+
+    public static readonly GraphQL = "/graphql"
 }

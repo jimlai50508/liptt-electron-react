@@ -9,7 +9,6 @@ import {
     MenuItemConstructorOptions,
     MenuItem,
     EventEmitter,
-    Debugger,
 } from "electron"
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer"
 import * as path from "path"
@@ -32,6 +31,27 @@ import {
 } from "../model"
 import { ApiRoute } from "../model"
 import { Attribute, ForeColor } from "../model/terminal"
+
+import {
+    graphql,
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLString,
+} from "graphql"
+
+const schema = new GraphQLSchema({
+    query: new GraphQLObjectType({
+        name: "RootQueryType",
+        fields: {
+            hello: {
+                type: GraphQLString,
+                resolve() {
+                    return "world"
+                },
+            },
+        },
+    }),
+})
 
 export class App {
 
@@ -326,7 +346,7 @@ export class App {
             await lock.wait()
             await this.client.enterMailList()
 
-            const data = Terminal.GetBytesWriteColor("Hello World Test NewLine", {attribute: Attribute.Bold, color: ForeColor.Red})
+            const data = Terminal.GetBytesFromContent("*[1;33mHello World*[m\nTest *[1;5;34mNewLine*[m")
             const result = await this.client.sendPttMail("lightyan", "Test NewLine", data)
             console.log(result)
             lock.signal()
@@ -342,6 +362,13 @@ export class App {
             // } catch (err) {
             //     console.error(err)
             // }
+        })
+
+        ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, query: string) => {
+            await lock.wait()
+            const result = await graphql(schema, query)
+            this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
+            lock.signal()
         })
 
         ipcMain.on(ApiRoute.testDevMode, async (_: EventEmitter) => {

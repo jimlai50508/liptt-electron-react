@@ -5,7 +5,10 @@
         "module": "esnext",
         "moduleResolution": "node",
         "target": "es6",
-        "lib": ["es7", "dom"],
+        "lib": [
+            "esnext",
+            "dom",
+        ],
         "types": [
         ],
         "paths": {
@@ -20,12 +23,12 @@
     "compileOnSave": false,
     "include": [
         "renderer/**/*",
-        "main/model/**/*"
+        "main/model/**/*",
+        "renderer/**/*.d.ts",
     ],
     "exclude": [
         "node_modules",
         "dist",
         "main",
-        "renderer/**/*.d.ts",
     ]
 }
