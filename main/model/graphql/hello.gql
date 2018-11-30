@@ -1,0 +1,18 @@
+scalar PTTState
+
+type User {
+    username: String
+}
+
+type Mutation {
+    login(username: String!, password: String!): PTTState
+}
+
+type Query {
+    me: User
+}
+
+schema {
+  query: Query
+  mutation: Mutation
+}

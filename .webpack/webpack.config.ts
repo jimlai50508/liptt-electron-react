@@ -7,7 +7,6 @@ import TsImportPlugin = require("ts-import-plugin")
 import * as HtmlWebpackPlugin from "html-webpack-plugin"
 import * as MiniCssExtractPlugin from "mini-css-extract-plugin"
 // var nodeExternals = require('webpack-node-externals')
-
 const entry: Entry = {
     index:  "./renderer/index.tsx",
 }
@@ -28,6 +27,12 @@ const conf: Configuration = {
         publicPath: "./",
     },
     target: "electron-renderer",
+    resolveLoader: {
+        modules: [
+            "node_modules",
+            "./.webpack/loaders",
+        ],
+    },
     module: {
         rules: [
             {
@@ -65,7 +70,10 @@ const conf: Configuration = {
             {
                 test: /\.(graphql|gql)$/,
                 exclude: /node_modules/,
-                loader: "graphql-tag/loader",
+                use: [
+                    { loader: "typings-graphql-loader" },
+                    { loader: "graphql-tag/loader" },
+                ],
             },
             {
                 test: /\.(png|jp(e?)g|gif|svg)$/,

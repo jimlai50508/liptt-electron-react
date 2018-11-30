@@ -35,24 +35,12 @@ import { Attribute, ForeColor } from "../model/terminal"
 import {
     graphql,
     buildSchema,
-    // GraphQLSchema,
-    // GraphQLObjectType,
-    // GraphQLString,
+    GraphQLSchema,
+    GraphQLObjectType,
+    GraphQLString,
 } from "graphql"
 
-// const schema = new GraphQLSchema({
-//     query: new GraphQLObjectType({
-//         name: "RootQueryType",
-//         fields: {
-//             hello: {
-//                 type: GraphQLString,
-//                 resolve() {
-//                     return "world"
-//                 },
-//             },
-//         },
-//     }),
-// })
+import { makeExecutableSchema, ResolveType } from "graphql-tools"
 
 export class App {
 
@@ -365,22 +353,67 @@ export class App {
             // }
         })
 
-        ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, query: string) => {
-            await lock.wait()
-            const schema = buildSchema(`
-            type Query {
-                hello: String
-            }
-            `)
+        ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, gqlquery: string) => {
 
-            const root = {
-                hello: () => {
-                  return "Hello world!"
+            gqlquery = `
+            # query {
+            #    me { username }
+            # }
+            mutation ($u: UserInput!) {
+                login(user: $u)
+            }
+            `
+
+            const typeDefs = [`
+            scalar PTTState
+
+            input UserInput {
+                username: String!
+                password: String!
+            }
+
+            type User {
+                username: String
+                password: String
+            }
+
+            type Mutation {
+                login(user: UserInput!): PTTState
+            }
+
+            type Query {
+                me: User
+            }
+
+            schema {
+                mutation: Mutation
+                query: Query
+            }
+            `]
+
+            const resolvers = {
+                Query: {
+                    me: () => {
+                        return { username: "k", password: "p"}
+                    },
+                },
+                Mutation: {
+                    login: (root: any, args: any, context: any) => {
+                        console.log(args)
+                        return PTTState.Accept
+                    },
                 },
             }
 
-            const result = await graphql(schema, query, root)
-            this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
+            const schema = makeExecutableSchema({typeDefs, resolvers})
+            await lock.wait()
+            const user: User = { username: "lightyen", password: "test"}
+            try {
+                const result = await graphql(schema, gqlquery, null, null, { u: user })
+                this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
+            } catch (err) {
+                console.log(err)
+            }
             lock.signal()
         })
 

@@ -16,6 +16,7 @@
             "assets/*":     ["./renderer/assets/*"],
             "components/*": ["./renderer/App/components/*"],
             "model":        ["./main/model"],
+            "model/*":        ["./main/model/*"],
             "encoding":     ["./main/encoding"],
         },
         "baseUrl": "./"

@@ -69,6 +69,12 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
             username: this.state.username,
             password: this.state.password,
         }
+        const query = "mutation {}"
+        PromiseIpcRenderer.send<any>(ApiRoute.GraphQL, query)
+        .then((result) => {
+            console.log(result)
+        })
+
         PromiseIpcRenderer.send<PTTState>(ApiRoute.login, user)
         .then((s: PTTState) => {
             if (s === PTTState.MainPage) {
