@@ -7,9 +7,16 @@ export class PromiseIpcRenderer {
     public static async send<Response>(channel: string, ...args: any[]): Promise<Response> {
         return new Promise<Response>((resolve) => {
             ipcRenderer.once(channel, (e: EventEmitter, response: Response) => {
+                if (channel === "/graphql") {
+                    console.warn(response)
+                }
                 resolve(response)
-                console.warn("render: " + channel)
             })
+            if (channel === "/graphql") {
+                console.warn("graphql:" + args[0])
+            } else {
+                console.warn("render: " + channel)
+            }
             ipcRenderer.send(channel, ...args)
         })
     }

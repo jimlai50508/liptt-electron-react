@@ -56,8 +56,6 @@ export enum PTTState {
     ArticleDeleted,
     /** 推/噓 */
     Comment,
-    /** 確定要離開? */
-    ExitConcern,
     /** 找不到這個文章代碼 */
     AIDNotFound,
     /** 使用者列表 */
@@ -148,8 +146,6 @@ export function StateString(s: PTTState): string {
         return "文章已被刪除"
     case PTTState.Comment:
         return "推/噓"
-    case PTTState.ExitConcern:
-        return "確定要離開"
     case PTTState.AIDNotFound:
         return "找不到文章代碼"
     case PTTState.EasyTalk:
@@ -232,8 +228,6 @@ export function StateFilter(t: Terminal) {
         return PTTState.SendMailSuccess
     } else if (lines[22].includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
-    } else if (lines[22].includes("您確定要離開")) {
-        return PTTState.ExitConcern
     } else if (lines[22].startsWith("登入中")) {
         return PTTState.Logging
     } else if (lines[22].startsWith("正在更新與同步")) {

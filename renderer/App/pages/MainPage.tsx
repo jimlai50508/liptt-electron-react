@@ -35,6 +35,7 @@ interface ComponentState {
 export class MainPage extends Component<ComponentProps, ComponentState> {
 
     private reactionDisposer: IReactionDisposer
+    private isLogout: boolean
 
     @autobind
     private onCollapse(collapsed: boolean) {
@@ -52,8 +53,14 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     @autobind
     private onLogout(e: MouseEvent<HTMLElement>) {
-        PromiseIpcRenderer.send(ApiRoute.logout)
-        this.setState((prev, _) => ({...prev, logout: true}))
+        const gql = `{ logout }`
+        this.isLogout = false
+        PromiseIpcRenderer.send(ApiRoute.GraphQL, gql)
+        .then(result => {
+            this.setState((prev, _) => ({...prev, logout: true}))
+        })
+        // PromiseIpcRenderer.send(ApiRoute.logout)
+        // this.setState((prev, _) => ({...prev, logout: true}))
     }
 
     constructor(props: ComponentProps) {
@@ -63,6 +70,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             activeMenu: "",
             collapsed: false,
         }
+        this.isLogout = true
     }
 
     private renderContent(): JSX.Element {
@@ -92,14 +100,14 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             () => this.props.socket.socketState,
             (state) => {
                 if (state === SocketState.Closed) {
-                    notification.config({placement: "bottomRight"})
-                    notification.error({
-                        message: "liptt 通知",
-                        description: "連線已斷開",
-                    })
-                    setTimeout(() => {
+                    if (this.isLogout) {
+                        notification.config({placement: "bottomRight"})
+                        notification.error({
+                            message: "liptt 通知",
+                            description: "連線已斷開",
+                        })
                         this.setState((prev, _) => ({...prev, logout: true}))
-                    }, 100)
+                    }
                 }
             })
         // this.reactionDisposer = when(
@@ -120,7 +128,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             const hasEmail = await PromiseIpcRenderer.send<boolean>(ApiRoute.checkMail)
             if (hasEmail) {
                 notification.config({placement: "bottomRight"})
-                setTimeout(() => {
+                window.setTimeout(() => {
                     notification.open({
                         message: "liptt 通知",
                         description: "你有新的信件喔!",

@@ -1,0 +1,34 @@
+enum LoginResponse {
+    WrongPassword
+    Overloading
+    Ok
+    WebSocketFailed
+    HeavyLogin
+    WhereAmI
+}
+
+input UserInput {
+    username: String!
+    password: String!
+}
+
+type User {
+    username: String
+    password: String
+}
+
+
+
+type Mutation {
+    login(user: UserInput!): LoginResponse
+}
+
+type Query {
+    me: User
+    logout: String
+}
+
+schema {
+    mutation: Mutation
+    query: Query
+}

@@ -4,6 +4,7 @@ import autobind from "autobind-decorator"
 import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
 import { PromiseIpcRenderer, User, PTTState, StateString, ApiRoute } from "model"
+import { GraphQLError } from "graphql"
 
 interface ComponentProps {
 
@@ -15,6 +16,15 @@ interface ComponentState {
     username: string
     password: string
     loading: boolean
+}
+
+interface GraphQLQuery {
+    login: string
+}
+
+interface LoginResult {
+    data?: GraphQLQuery
+    errors?: GraphQLError
 }
 
 export class LoginPage extends Component<ComponentProps, ComponentState> {
@@ -69,32 +79,43 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
             username: this.state.username,
             password: this.state.password,
         }
-        const query = "mutation {}"
-        PromiseIpcRenderer.send<any>(ApiRoute.GraphQL, query)
-        .then((result) => {
-            console.log(result)
-        })
 
-        PromiseIpcRenderer.send<PTTState>(ApiRoute.login, user)
-        .then((s: PTTState) => {
-            if (s === PTTState.MainPage) {
+        const gql = `
+        # query {
+        #    me { username }
+        # }
+        mutation LoginMutation($user: UserInput!) {
+            login(user: $user)
+        }
+        `
+        const args = {
+            user,
+        }
+        PromiseIpcRenderer.send<LoginResult>(ApiRoute.GraphQL, gql, args)
+        .then(result => {
+            if (result.errors) {
+                console.error(result.errors)
+                return
+            }
+            const s = result.data.login
+            if (s === "Ok") {
                 this.setState((prev, _) => ({...prev, loading: false, logined: true}))
             } else {
                 this.setState((prev, _) => ({...prev, loading: false, logined: false}))
                 switch (s) {
-                case PTTState.WebSocketFailed:
+                case "WebSocketFailed":
                     notification.config({placement: "topRight"})
                     setTimeout(() => {
-                        notification.error({message: "", description: "連線失敗"})
+                        notification.error({message: "", description: "WebSocket連線失敗"})
                     }, 10)
                     break
-                case PTTState.Overloading:
+                case "Overloading":
                     notification.config({placement: "topRight"})
                     setTimeout(() => {
                         notification.warn({message: "", description: "系統過載..."})
                     }, 10)
                     break
-                case PTTState.HeavyLogin:
+                case "HeavyLogin":
                     notification.config({placement: "topRight"})
                     setTimeout(() => {
                         notification.warn({message: "", description: "登入太多次了"})
@@ -103,12 +124,47 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                 default:
                     notification.config({placement: "topRight"})
                     setTimeout(() => {
-                        notification.error({message: "", description: StateString(s)})
+                        notification.error({message: "", description: "Where"})
                     }, 10)
                     break
                 }
             }
         })
+
+        // PromiseIpcRenderer.send<PTTState>(ApiRoute.login, user)
+        // .then((s: PTTState) => {
+        //     if (s === PTTState.MainPage) {
+        //         this.setState((prev, _) => ({...prev, loading: false, logined: true}))
+        //     } else {
+        //         this.setState((prev, _) => ({...prev, loading: false, logined: false}))
+        //         switch (s) {
+        //         case PTTState.WebSocketFailed:
+        //             notification.config({placement: "topRight"})
+        //             setTimeout(() => {
+        //                 notification.error({message: "", description: "連線失敗"})
+        //             }, 10)
+        //             break
+        //         case PTTState.Overloading:
+        //             notification.config({placement: "topRight"})
+        //             setTimeout(() => {
+        //                 notification.warn({message: "", description: "系統過載..."})
+        //             }, 10)
+        //             break
+        //         case PTTState.HeavyLogin:
+        //             notification.config({placement: "topRight"})
+        //             setTimeout(() => {
+        //                 notification.warn({message: "", description: "登入太多次了"})
+        //             }, 10)
+        //             break
+        //         default:
+        //             notification.config({placement: "topRight"})
+        //             setTimeout(() => {
+        //                 notification.error({message: "", description: StateString(s)})
+        //             }, 10)
+        //             break
+        //         }
+        //     }
+        // })
         this.setState((prev, _) => ({...prev, loading: true}))
     }
 

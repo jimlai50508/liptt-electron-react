@@ -16,7 +16,7 @@ import Semaphore from "semaphore-async-await"
 import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
 import { isDevMode, RendererConsole, UserStorage, LogFile, Google } from "../utils"
-
+import * as fs from "fs"
 import { LiPTT } from "../liptt"
 import {
     User,
@@ -30,17 +30,18 @@ import {
     MailAbstract,
 } from "../model"
 import { ApiRoute } from "../model"
-import { Attribute, ForeColor } from "../model/terminal"
-
 import {
     graphql,
     buildSchema,
     GraphQLSchema,
     GraphQLObjectType,
     GraphQLString,
+    GraphQLError,
+    GraphQLEnumType,
 } from "graphql"
-
-import { makeExecutableSchema, ResolveType } from "graphql-tools"
+import { makeExecutableSchema } from "graphql-tools"
+import { promisify } from "util"
+const readFile = promisify(fs.readFile)
 
 export class App {
 
@@ -50,9 +51,12 @@ export class App {
     private tray: Tray
 
     private client: LiPTT
+    private semaphore: Semaphore
+    private schema: GraphQLSchema
 
     constructor() {
         this.mainWindow = null
+        this.semaphore = new Semaphore(1)
         this.windowOptions = {
             title: appName,
             show: false,
@@ -199,7 +203,7 @@ export class App {
     }
 
     private async quit() {
-        await this.client.logout()
+        await this.logout()
         app.quit()
         this.mainWindow = null
     }
@@ -221,110 +225,98 @@ export class App {
     }
 
     private addAPI() {
-        const lock = new Semaphore(1)
-
-        ipcMain.on(ApiRoute.loadUserInfo, async (_: EventEmitter) => {
-            await lock.wait()
-            const u = UserStorage.User
-            this.mainWindow.webContents.send(ApiRoute.loadUserInfo, u)
-            lock.signal()
+        ipcMain.on(ApiRoute.login, async (_: EventEmitter, u: User) => {
+            const s = await this.login(u)
+            this.mainWindow.webContents.send(ApiRoute.login, s)
         })
 
         ipcMain.on(ApiRoute.logout, async (_: EventEmitter) => {
-            await this.client.logout()
+            await this.logout()
+            this.mainWindow.webContents.send(ApiRoute.logout, "ok")
         })
 
-        ipcMain.on(ApiRoute.login, async (_: EventEmitter, u: User) => {
-            await lock.wait()
-            if (u.username && u.password) {
-                const s = await this.client.login(u.username, u.password)
-                this.mainWindow.webContents.send(ApiRoute.login, s)
-                if (s === PTTState.MainPage) {
-                    UserStorage.User = u
-                }
-            } else {
-                this.mainWindow.webContents.send(ApiRoute.login, PTTState.WrongPassword)
-            }
-            lock.signal()
+        ipcMain.on(ApiRoute.loadUserInfo, async (_: EventEmitter) => {
+            const u = this.loadUserStorage()
+            this.mainWindow.webContents.send(ApiRoute.loadUserInfo, u)
         })
 
         ipcMain.on(ApiRoute.checkMail, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const result = this.client.checkMail()
             this.mainWindow.webContents.send(ApiRoute.checkMail, result)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         ipcMain.on(ApiRoute.getFavoriteList, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const data: FavoriteItem[] = await this.client.getFavorite()
             this.mainWindow.webContents.send(ApiRoute.getFavoriteList, data)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         ipcMain.on(ApiRoute.getHotList, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const data: HotItem[] = await this.client.getHotList()
             this.mainWindow.webContents.send(ApiRoute.getHotList, data)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         /// 進入看板
         ipcMain.on(ApiRoute.goBoard, async (_: EventEmitter, board: string) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const result = await this.client.enterBoard(board)
             this.mainWindow.webContents.send(ApiRoute.goBoard, result)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         /// 取得文章列表
         ipcMain.on(ApiRoute.getMoreBoard, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const result = await this.client.getMoreArticleAbstract(30)
             RendererConsole.warn(result)
             this.mainWindow.webContents.send(ApiRoute.getMoreBoard, result)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         /// 取得文章資訊
         ipcMain.on(ApiRoute.getBoardArticleHeader, async (_: EventEmitter, ab: ArticleAbstract) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const header = await this.client.getBoardArticleHeader(ab)
             this.mainWindow.webContents.send(ApiRoute.getBoardArticleHeader, header)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         // 進入文章
         // ipcMain.on("/article", async (_: EventEmitter, ab: ArticleAbstract) => {
-        //     await lock.wait()
+        //     await this.semaphore.wait()
         //     const result = await this.client.enterArticle(ab)
-        //     lock.signal()
+        //     this.semaphore.signal()
         //     this.mainWindow.webContents.send("/article", result)
         // })
 
         /// 進入文章，取得文章內容
         ipcMain.on(ApiRoute.getMoreArticle, async (_: EventEmitter, h: ArticleHeader) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const ans = await this.client.getMoreArticleContent(h)
             this.mainWindow.webContents.send(ApiRoute.getMoreArticle, ans)
-            lock.signal()
+            this.semaphore.signal()
         })
 
         ipcMain.on(ApiRoute.left, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             await this.client.left()
             this.mainWindow.webContents.send(ApiRoute.left, { message: "done" })
-            lock.signal()
+            this.semaphore.signal()
         })
 
         ipcMain.on(ApiRoute.getMailList, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             const ok = await this.client.enterMailList()
             if (ok) {
                 const result = await this.client.getMoreMailAbstract(40)
                 this.mainWindow.webContents.send(ApiRoute.getMailList, result)
             }
-            lock.signal()
+            this.semaphore.signal()
         })
 
         ipcMain.on(ApiRoute.terminalSnapshot, async (_: EventEmitter) => {
@@ -332,13 +324,13 @@ export class App {
         })
 
         ipcMain.on(ApiRoute.googleSendMail, async (_: EventEmitter) => {
-            await lock.wait()
+            await this.semaphore.wait()
             await this.client.enterMailList()
 
             const data = Terminal.GetBytesFromContent("*[1;33mHello World*[m\nTest *[1;5;34mNewLine*[m")
             const result = await this.client.sendPttMail("lightyan", "Test NewLine", data)
             console.log(result)
-            lock.signal()
+            this.semaphore.signal()
             this.mainWindow.webContents.send(ApiRoute.googleSendMail, { message: "done" })
             // const g = new Google()
             // try {
@@ -353,70 +345,6 @@ export class App {
             // }
         })
 
-        ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, gqlquery: string) => {
-
-            gqlquery = `
-            # query {
-            #    me { username }
-            # }
-            mutation ($u: UserInput!) {
-                login(user: $u)
-            }
-            `
-
-            const typeDefs = [`
-            scalar PTTState
-
-            input UserInput {
-                username: String!
-                password: String!
-            }
-
-            type User {
-                username: String
-                password: String
-            }
-
-            type Mutation {
-                login(user: UserInput!): PTTState
-            }
-
-            type Query {
-                me: User
-            }
-
-            schema {
-                mutation: Mutation
-                query: Query
-            }
-            `]
-
-            const resolvers = {
-                Query: {
-                    me: () => {
-                        return { username: "k", password: "p"}
-                    },
-                },
-                Mutation: {
-                    login: (root: any, args: any, context: any) => {
-                        console.log(args)
-                        return PTTState.Accept
-                    },
-                },
-            }
-
-            const schema = makeExecutableSchema({typeDefs, resolvers})
-            await lock.wait()
-            const user: User = { username: "lightyen", password: "test"}
-            try {
-                const result = await graphql(schema, gqlquery, null, null, { u: user })
-                this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
-            } catch (err) {
-                console.log(err)
-            }
-            lock.signal()
-        })
-
         ipcMain.on(ApiRoute.testDevMode, async (_: EventEmitter) => {
             const dev = isDevMode()
             this.mainWindow.webContents.send(ApiRoute.testDevMode, dev)
@@ -425,5 +353,78 @@ export class App {
         this.client.on("socket", (state: SocketState) => {
             this.mainWindow.webContents.send(ApiRoute.socketEvent, state)
         })
+
+        fs.readFile(path.resolve(__dirname, "../../../resources/graphql/liptt.gql"), {encoding: "utf-8"}, (err, data) => {
+            if (err) {
+                console.error(err)
+                return
+            }
+            const typeDefs = data
+            const resolvers = {
+                Query: {
+                    me: () => {
+                        return { username: "k", password: "p"}
+                    },
+                    logout: async () => {
+                        await this.logout()
+                        return "ok"
+                    },
+                },
+                Mutation: {
+                    login: async (root: any, args: any, context: any) => {
+                        const { user } = args
+                        const s = await this.login(user)
+
+                        switch (s) {
+                            case PTTState.MainPage:
+                            return "Ok"
+                            case PTTState.WrongPassword:
+                            return "WrongPassword"
+                            case PTTState.Overloading:
+                            return "Overloading"
+                            case PTTState.HeavyLogin:
+                            return "HeavyLogin"
+                            case PTTState.WebSocketFailed:
+                            return "WebSocketFailed"
+                            default:
+                            return "WhereAmI"
+                        }
+                    },
+                },
+            }
+
+            this.schema = makeExecutableSchema({typeDefs, resolvers})
+        })
+
+        ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, gqlquery: string, inputObject: any) => {
+            try {
+                const result = await graphql(this.schema, gqlquery, null, null, inputObject)
+                this.mainWindow.webContents.send(ApiRoute.GraphQL, result)
+            } catch (err) {
+                this.mainWindow.webContents.send(ApiRoute.GraphQL, err)
+            }
+        })
+    }
+
+    private async login(u: User): Promise<PTTState> {
+        await this.semaphore.wait()
+        if (!u.username || !u.password) {
+            return PTTState.WrongPassword
+            this.semaphore.signal()
+        }
+        const s = await this.client.login(u.username, u.password)
+        if (s === PTTState.MainPage) {
+            UserStorage.User = u
+        }
+        this.semaphore.signal()
+        return s
+    }
+
+    private async logout(): Promise<void> {
+        await this.client.logout()
+    }
+
+    private loadUserStorage(): User {
+        return UserStorage.User
     }
 }
