@@ -1,3 +1,12 @@
+type Query {
+    me: String
+    logout: String
+}
+
+type Mutation {
+    login(user: UserInput!): LoginResponse
+}
+
 enum LoginResponse {
     WrongPassword
     Overloading
@@ -13,22 +22,6 @@ input UserInput {
 }
 
 type User {
-    username: String
+    username: String!
     password: String
-}
-
-
-
-type Mutation {
-    login(user: UserInput!): LoginResponse
-}
-
-type Query {
-    me: User
-    logout: String
-}
-
-schema {
-    mutation: Mutation
-    query: Query
 }

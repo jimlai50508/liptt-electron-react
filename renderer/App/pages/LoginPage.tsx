@@ -84,7 +84,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
         # query {
         #    me { username }
         # }
-        mutation LoginMutation($user: UserInput!) {
+        mutation LoginMutation($user: User!) {
             login(user: $user)
         }
         `

@@ -363,7 +363,7 @@ export class App {
             const resolvers = {
                 Query: {
                     me: () => {
-                        return { username: "k", password: "p"}
+                        return "lightyen"
                     },
                     logout: async () => {
                         await this.logout()
