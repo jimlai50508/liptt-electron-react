@@ -18,7 +18,7 @@ export class CSSPage extends Component<ComponentProps, ComponentState> {
     }
 
     private sendTest() {
-
+        PromiseIpcRenderer.send(ApiRoute.googleSendMail)
     }
 
     public render() {

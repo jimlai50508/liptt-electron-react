@@ -324,25 +324,25 @@ export class App {
         })
 
         ipcMain.on(ApiRoute.googleSendMail, async (_: EventEmitter) => {
-            await this.semaphore.wait()
-            await this.client.enterMailList()
+            // await this.semaphore.wait()
+            // await this.client.enterMailList()
 
-            const data = Terminal.GetBytesFromContent("*[1;33mHello World*[m\nTest *[1;5;34mNewLine*[m")
-            const result = await this.client.sendPttMail("lightyan", "Test NewLine", data)
-            console.log(result)
-            this.semaphore.signal()
-            this.mainWindow.webContents.send(ApiRoute.googleSendMail, { message: "done" })
-            // const g = new Google()
-            // try {
-            //     const lines: string[] = []
-            //     this.client.curArticleContent.map((arr) => {
-            //         lines.push(Terminal.GetRenderStringLine(arr))
-            //     })
-            //     const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
-            //     await g.SendMailArticleToSelf(title, title, lines)
-            // } catch (err) {
-            //     console.error(err)
-            // }
+            // const data = Terminal.GetBytesFromContent("*[1;33mHello World*[m\nTest *[1;5;34mNewLine*[m")
+            // const result = await this.client.sendPttMail("lightyan", "Test NewLine", data)
+            // console.log(result)
+            // this.semaphore.signal()
+            // this.mainWindow.webContents.send(ApiRoute.googleSendMail, { message: "done" })
+            const g = new Google()
+            try {
+                const lines: string[] = []
+                this.client.curArticleContent.map((arr) => {
+                    lines.push(Terminal.GetRenderStringLine(arr))
+                })
+                const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
+                await g.SendMailArticleToSelf(title, title, lines)
+            } catch (err) {
+                console.error(err)
+            }
         })
 
         ipcMain.on(ApiRoute.testDevMode, async (_: EventEmitter) => {
