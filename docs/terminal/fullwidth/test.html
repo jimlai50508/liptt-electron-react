@@ -16,7 +16,7 @@
     margin-right: auto;
     letter-spacing: 0px;
     color: #9c4747;
-    font-family: "MingLiu",monospace;
+    font-family: "MingLiu";
     font-size: 1.5em;
 }
 .bbsWrapper {
@@ -50,9 +50,8 @@ function calcWidth(code, defaultSize) {
     const canvas = document.createElement('canvas')
     const text = String.fromCharCode(code)
     const ctx = canvas.getContext("2d")
-    ctx.font = `${defaultSize}px \"MingLiu\"`
-    const dimension = ctx.measureText(text)
-    return dimension.width
+    ctx.font = `${defaultSize}px MingLiU`
+    return ctx.measureText(text).width
 }
 
 function isFullWidth(code, defaultSize) {
@@ -80,11 +79,11 @@ $(document).ready(function(){
     const text = htm.reduce((acc, cur) => {
         if (!isFullWidth(cur.unicode, 14)) {
             ans.push(cur)
-            return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur.unicode + "\" class=\"line\">" + String.fromCodePoint(cur.unicode) + "</div>"
+            return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur.unicode + "\" class=\"line\">" + String.fromCharCode(cur.unicode) + "</div>"
         } else {
             return acc
         }
-    })
+    }, "")
 
     let h = []
     for (let i = 0x20; i < 0x7F; i++) {
@@ -96,9 +95,12 @@ $(document).ready(function(){
         } else {
             return acc
         }
-    })
+    }, "")
 
     $("#output").html(text + extra)
+
+    console.log(calcWidth(0xE575, 14))
+    console.log(calcWidth(0x2021, 14))
 })
 
 
