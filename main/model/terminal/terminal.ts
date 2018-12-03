@@ -1,4 +1,4 @@
-import { Big5UAO, big5HalfWidthList } from "../../encoding"
+import { Big5UAO } from "../../encoding"
 import { Block } from "./block"
 import { Color, Attribute } from "./color"
 
@@ -323,14 +323,16 @@ export class Terminal {
         let attr: Attribute = line[0].Attribute
         let data: byte[] = []
         let cache: Block
+        let groupWidth = 0
         let isWChar: boolean = false
         for (let j = 0; j < TerminalWidth; j++) {
             const b = line[j]
             if (isWChar) {
                 if ((cache.Foreground !== b.Foreground) || (cache.Background !== b.Background) || (cache.Attribute !== b.Attribute)) {
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
                     str += this.getHalfColorContent(cache.Content, b.Content, cache.Foreground, cache.Background, cache.Attribute, b.Foreground, b.Background, b.Attribute)
                     fg = b.Foreground
@@ -338,22 +340,20 @@ export class Terminal {
                     attr = b.Attribute
                 } else if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
                     data.push(cache.Content)
                     data.push(b.Content)
+                    groupWidth += 1
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
-                } else if (big5HalfWidthList.includes((cache.Content << 8) + b.Content)) {
-                    // push to data
-                    str += this.getGroup(data, fg, bg, attr)
-                    str += this.getFullWidthContent(cache.Content, b.Content, fg, bg, attr)
-                    data = []
                 } else {
                     data.push(cache.Content)
                     data.push(b.Content)
+                    groupWidth += 1
                 }
 
                 isWChar = false
@@ -365,8 +365,9 @@ export class Terminal {
                 if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
 
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
 
                     fg = b.Foreground
@@ -375,11 +376,12 @@ export class Terminal {
                 }
 
                 data.push(b.Content)
+                groupWidth += 0.5
             }
         }
 
         if (data.length > 0) {
-            str += this.getGroup(data, fg, bg, attr)
+            str += this.getGroup(data, fg, bg, attr, groupWidth)
             data = null
         }
 
@@ -387,21 +389,21 @@ export class Terminal {
         return str
     }
 
-    private static getGroup(data: byte[], foreground: number, background: number, attr: Attribute): string {
+    private static getGroup(data: byte[], foreground: number, background: number, attr: Attribute, groupWidth: number): string {
         const bytes = Uint8Array.from(data)
         const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
         const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
         const s = Big5UAO.GetString(bytes)
-        let width = 0
-        for (let k = 0; k < s.length; k++) {
-            if (s.charCodeAt(k) < 0x7F) {
-                width += 0.5
-            } else {
-                width += 1
-            }
-        }
+        // let width = 0
+        // for (let k = 0; k < s.length; k++) {
+        //     if (s.charCodeAt(k) < 0x7F) {
+        //         width += 0.5
+        //     } else {
+        //         width += 1
+        //     }
+        // }
 
-        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${width}em\">` + Terminal.convertHTML(s) + "</span>"
+        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${groupWidth}em\">` + Terminal.convertHTML(s) + "</span>"
     }
 
     private static getHalfColorContent(ldata: byte, rdata: byte, lfg: number, lbg: number, lattr: Attribute, rfg: number, rbg: number, rattr: Attribute): string {
@@ -417,7 +419,7 @@ export class Terminal {
 
         const s = Big5UAO.GetString(bytes)
         const code = (ldata << 8) + rdata
-        const style = big5HalfWidthList.includes(code) ? `style="width: 1em;"` : ""
+        const style = `style="width: 1em;"`
         const text = Terminal.convertHTML(s)
         return `<span class="halfTextContainer"><span ${style} class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${text}">${text}</span></span>`
     }
