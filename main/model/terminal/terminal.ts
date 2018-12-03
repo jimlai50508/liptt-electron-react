@@ -1,4 +1,4 @@
-import { Big5UAO } from "../../encoding"
+import { Big5UAO, big5HalfWidthList } from "../../encoding"
 import { Block } from "./block"
 import { Color, Attribute } from "./color"
 
@@ -350,6 +350,12 @@ export class Terminal {
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
+                } else if (big5HalfWidthList.includes((cache.Content << 8) + b.Content)) {
+                    // push to data
+                    str += this.getGroup(data, fg, bg, attr, groupWidth)
+                    str += this.getFullWidthContent(cache.Content, b.Content, fg, bg, attr)
+                    data = []
+                    groupWidth = 0
                 } else {
                     data.push(cache.Content)
                     data.push(b.Content)
@@ -418,7 +424,6 @@ export class Terminal {
         const rbgcolor = `b${rattr & Attribute.Reverse ? (87 - rbg) : rbg}`
 
         const s = Big5UAO.GetString(bytes)
-        const code = (ldata << 8) + rdata
         const style = `style="width: 1em;"`
         const text = Terminal.convertHTML(s)
         return `<span class="halfTextContainer"><span ${style} class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${text}">${text}</span></span>`
