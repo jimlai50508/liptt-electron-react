@@ -34,10 +34,10 @@ export class LiPTT extends Client {
     public curArticleContent: Block[][]
     private snapshot: Terminal
     private snapshotStat: PTTState
-
+    public username: string
     private mailCache: MailCache
     private boardCache: BoardCache
-
+    private logined: boolean
     private newMail: boolean
 
     constructor() {
@@ -80,7 +80,8 @@ export class LiPTT extends Client {
     }
 
     /** 建立連線, 然後登入 */
-    public async login(user: string, pass: string): Promise<PTTState> {
+    public async login(username: string, pass: string): Promise<PTTState> {
+        this.logined = false
         const result = await this.connect()
         if (result !== SocketState.Connected) {
             switch (result) {
@@ -94,6 +95,8 @@ export class LiPTT extends Client {
                 return PTTState.None
             }
         }
+
+        this.username = username
 
         const waitState = () => new Promise<PTTState>(resolve => {
             let c = 0
@@ -130,7 +133,7 @@ export class LiPTT extends Client {
             s = await waitState()
         }
 
-        return this._login(user, pass)
+        return this._login(username, pass)
     }
 
     private async _login(user: string, pass: string): Promise<PTTState> {
@@ -193,7 +196,17 @@ export class LiPTT extends Client {
                 break
             }
         }
+        if (stat === PTTState.MainPage) {
+            this.logined = true
+        }
         return stat
+    }
+
+    public get isLogin(): boolean {
+        if (this.isOpen) {
+            return this.logined
+        }
+        return false
     }
 
     public async logout(): Promise<void> {
@@ -205,6 +218,7 @@ export class LiPTT extends Client {
             [, s] = await this.Send(Control.Left())
         }
         [, s] = await this.Send(Control.Goodbye())
+        this.logined = false
         if (s === PTTState.Quit) {
             // 最後一步
             this.send(Control.Left())

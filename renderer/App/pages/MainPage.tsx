@@ -53,7 +53,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     @autobind
     private onLogout(e: MouseEvent<HTMLElement>) {
-        const gql = `{ logout }`
+        const gql = `mutation { logout }`
         this.isLogout = false
         PromiseIpcRenderer.send(ApiRoute.GraphQL, gql)
         .then(result => {

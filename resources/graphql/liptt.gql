@@ -1,9 +1,9 @@
 type Query {
-    me: String
-    logout: String
+    me: User
 }
 
 type Mutation {
+    logout: String
     login(user: UserInput!): LoginResponse
 }
 
@@ -16,6 +16,20 @@ enum LoginResponse {
     WhereAmI
 }
 
+enum FavoriteItemType {
+    Board
+    Folder
+    Horizontal
+}
+
+type FavoriteItem {
+    key: Int
+    type: FavoriteItemType
+    name: String
+    description: String
+    popularity: Int
+}
+
 input UserInput {
     username: String!
     password: String!
@@ -24,4 +38,5 @@ input UserInput {
 type User {
     username: String!
     password: String
+    favor: [FavoriteItem]
 }

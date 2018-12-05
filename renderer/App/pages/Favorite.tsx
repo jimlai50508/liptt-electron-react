@@ -2,8 +2,9 @@ import React, { Component } from "react"
 import { Table } from "antd"
 import { ColumnProps } from "antd/lib/table"
 import { FavoriteItem, PromiseIpcRenderer, ApiRoute } from "model"
+import { GraphQLError } from "graphql"
 
-const columns: Array<ColumnProps<FavoriteItem>> = [
+const columns: Array<ColumnProps<FavoriteItemInfo>> = [
     {
         title: "Index",
         dataIndex: "key",
@@ -29,7 +30,26 @@ interface ComponentProps {
 
 interface ComponentState {
     loading: boolean,
-    data: FavoriteItem[]
+    data: FavoriteItemInfo[]
+}
+
+interface FavoriteItemInfo {
+    key: number
+    type: string
+    name?: string
+    description?: string
+    popularity?: number
+}
+
+interface ResponseData {
+    me: {
+        favor: FavoriteItemInfo[],
+    }
+}
+
+interface Response {
+    data?: ResponseData
+    errors?: GraphQLError
 }
 
 export class Favorite extends Component<ComponentProps, ComponentState> {
@@ -43,9 +63,27 @@ export class Favorite extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<FavoriteItem[]>(ApiRoute.getFavoriteList)
-        .then((items) => {
-            this.setState((prev, _) => ({...prev, data: items, loading: false}))
+        // PromiseIpcRenderer.send<FavoriteItem[]>(ApiRoute.getFavoriteList)
+        // .then((items) => {
+        //     this.setState((prev, _) => ({...prev, data: items, loading: false}))
+        // })
+        const gql = `
+        fragment FavoriteItemInfo on FavoriteItem {
+            key
+            type
+            name
+            description
+            popularity
+        }
+        {
+            me {
+                favor { ... FavoriteItemInfo }
+            }
+        }
+        `
+        PromiseIpcRenderer.send<Response>(ApiRoute.GraphQL, gql)
+        .then((res) => {
+            this.setState((prev, _) => ({...prev, data: res.data.me.favor, loading: false}))
         })
     }
 

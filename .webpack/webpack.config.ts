@@ -111,7 +111,8 @@ const conf: Configuration = {
                     //     },
                     // },
                     { loader: "less-loader", options: { javascriptEnabled: true, modifyVars: {
-                        "primary-color": "#1DA57A",
+                        // 改變主題色
+                        // "primary-color": "#1DA57A",
                     } } },
                 ],
             },

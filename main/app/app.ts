@@ -28,6 +28,7 @@ import {
     SocketState,
     Terminal,
     MailAbstract,
+    FavoriteItemType,
 } from "../model"
 import { ApiRoute } from "../model"
 import {
@@ -39,7 +40,7 @@ import {
     GraphQLError,
     GraphQLEnumType,
 } from "graphql"
-import { makeExecutableSchema } from "graphql-tools"
+import { makeExecutableSchema, IResolverObject, IResolvers } from "graphql-tools"
 import { promisify } from "util"
 const readFile = promisify(fs.readFile)
 
@@ -49,7 +50,6 @@ export class App {
     private windowOptions: BrowserWindowConstructorOptions
     private readonly iconSrc = path.join(__dirname, "../../../resources/icons/256x256.png")
     private tray: Tray
-
     private client: LiPTT
     private semaphore: Semaphore
     private schema: GraphQLSchema
@@ -248,10 +248,8 @@ export class App {
         })
 
         ipcMain.on(ApiRoute.getFavoriteList, async (_: EventEmitter) => {
-            await this.semaphore.wait()
-            const data: FavoriteItem[] = await this.client.getFavorite()
-            this.mainWindow.webContents.send(ApiRoute.getFavoriteList, data)
-            this.semaphore.signal()
+            const result = await this.getFavoriteList(this.client)
+            this.mainWindow.webContents.send(ApiRoute.getFavoriteList, result)
         })
 
         ipcMain.on(ApiRoute.getHotList, async (_: EventEmitter) => {
@@ -360,18 +358,41 @@ export class App {
                 return
             }
             const typeDefs = data
-            const resolvers = {
+            const resolvers: IResolvers = {
                 Query: {
                     me: () => {
-                        return "lightyen"
-                    },
-                    logout: async () => {
-                        await this.logout()
-                        return "ok"
+                        return {
+                            username: () => this.client.username,
+                            password: () => "",
+                            favor: async () => {
+                                const result = await this.getFavoriteList(this.client)
+                                return result.map(v => {
+                                    let type = ""
+                                    switch (v.type) {
+                                        case FavoriteItemType.Board:
+                                        type = "Board"
+                                        break
+                                    case FavoriteItemType.Folder:
+                                        type = "Folder"
+                                        break
+                                    case FavoriteItemType.Horizontal:
+                                        type = "Horizontal"
+                                        break
+                                    }
+                                    return {
+                                        key: v.key,
+                                        type,
+                                        name: v.name,
+                                        description: v.description,
+                                        popularity: v.popularity,
+                                    }
+                                })
+                            },
+                        }
                     },
                 },
                 Mutation: {
-                    login: async (root: any, args: any, context: any) => {
+                    login: async (root: any, args: any, context: any, info: any) => {
                         const { user } = args
                         const s = await this.login(user)
 
@@ -390,6 +411,10 @@ export class App {
                             return "WhereAmI"
                         }
                     },
+                    logout: async () => {
+                        await this.logout()
+                        return "ok"
+                    },
                 },
             }
 
@@ -406,11 +431,21 @@ export class App {
         })
     }
 
+    private async getFavoriteList(client: LiPTT): Promise<FavoriteItem[]> {
+        if (!client.isLogin) {
+            return []
+        }
+        await this.semaphore.wait()
+        const data: FavoriteItem[] = await client.getFavorite()
+        this.semaphore.signal()
+        return data
+    }
+
     private async login(u: User): Promise<PTTState> {
         await this.semaphore.wait()
         if (!u.username || !u.password) {
-            return PTTState.WrongPassword
             this.semaphore.signal()
+            return PTTState.WrongPassword
         }
         const s = await this.client.login(u.username, u.password)
         if (s === PTTState.MainPage) {
