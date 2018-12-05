@@ -119,9 +119,9 @@ export class App {
             }
         })
         if (isDevMode()) {
-            globalShortcut.register("f5", () => {
-                this.mainWindow.reload()
-            })
+            // globalShortcut.register("f5", () => {
+            //     this.mainWindow.reload()
+            // })
             globalShortcut.register("CommandOrControl+R", () => {
                 this.mainWindow.reload()
             })
@@ -211,7 +211,7 @@ export class App {
     private newWindow() {
         this.mainWindow = new MainWindow(this.windowOptions)
         RendererConsole.window = this.mainWindow
-        this.mainWindow.on("close", (event: Electron.Event) => {
+        this.mainWindow.on("close", (event) => {
             if (!this.mainWindow.forceQuit) {
                 event.preventDefault()
                 this.mainWindow.forceQuit = true

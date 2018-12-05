@@ -150,6 +150,10 @@ export class LiPTT extends Client {
 
         while (stat !== PTTState.MainPage) {
             switch (stat) {
+            case PTTState.HeavyLogin:
+                // 關閉連線
+                this.close()
+                return stat
             case PTTState.Log:
                 [, stat] = await this.Send(Control.No()) // 刪除錯誤的登入紀錄
                 while (stat === PTTState.Log) {
@@ -200,7 +204,11 @@ export class LiPTT extends Client {
         while (s !== PTTState.MainPage) {
             [, s] = await this.Send(Control.Left())
         }
-        this.send(Control.Goodbye())
+        [, s] = await this.Send(Control.Goodbye())
+        if (s === PTTState.Quit) {
+            // 最後一步
+            this.send(Control.Left())
+        }
         await this.WaitClose()
     }
 

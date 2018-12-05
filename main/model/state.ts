@@ -26,6 +26,8 @@ export enum PTTState {
     Synchronizing,
     /** 要刪除上次錯誤的嘗試紀錄嗎? */
     Log,
+    /** 掰掰 */
+    Quit,
     /** 任意鍵繼續 */
     AnyKey,
     /** 主功能表 */
@@ -118,6 +120,8 @@ export function StateString(s: PTTState): string {
         return "同步處理中"
     case PTTState.Log:
         return "要刪除上次錯誤的嘗試紀錄嗎"
+    case PTTState.Quit:
+        return "已離開"
     case PTTState.AnyKey:
         return "任意鍵繼續"
     case PTTState.MainPage:
@@ -184,7 +188,7 @@ export function StateString(s: PTTState): string {
 }
 
 const articleFootReg = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
-let flag: object
+let flag: boolean
 let prevMatch: RegExpExecArray
 
 export function StateFilter(t: Terminal) {
@@ -203,18 +207,23 @@ export function StateFilter(t: Terminal) {
         return PTTState.MailList
     } else if (lines[23].trimLeft().startsWith("編輯文章  (^Z/F1)說明 (^P/^G)插入符號/範本 (^X/^Q)離開")) {
         return PTTState.EditFile
+    } else if (lines[23].startsWith(" ◆ 此次停留時間")) {
+        prevMatch = null
+        flag = false
+        return PTTState.Quit
     } else if (articleFootReg.test(lines[23])) {
         if (flag) {
             const match = articleFootReg.exec(lines[23])
             if (match) {
                 if (match[3] === prevMatch[3]) {
+                    console.log("FIXME: article footer wrong match")
                     return PTTState.WhereAmI
                 } else {
                     prevMatch = match
                 }
             }
         } else {
-            flag = {}
+            flag = true
             prevMatch = articleFootReg.exec(lines[23])
         }
         return PTTState.Article
@@ -259,7 +268,7 @@ export function StateFilter(t: Terminal) {
             return PTTState.WhereAmI
         }
     } else if (testBoard(lines[0], lines[1])) {
-        flag = undefined
+        flag = false
         return PTTState.Board
     } else if (lines[0].startsWith("【分類看板】"))  {
         return PTTState.Category

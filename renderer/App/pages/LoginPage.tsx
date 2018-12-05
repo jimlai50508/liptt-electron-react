@@ -1,6 +1,6 @@
 import React, { Component, ChangeEvent } from "react"
 import { Redirect } from "react-router-dom"
-import autobind from "autobind-decorator"
+// import autobind from "autobind-decorator"
 import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
 import { PromiseIpcRenderer, User, PTTState, StateString, ApiRoute } from "model"
@@ -13,6 +13,7 @@ interface ComponentProps {
 interface ComponentState {
     warning: boolean
     logined: boolean
+    lock: boolean
     username: string
     password: string
     loading: boolean
@@ -31,18 +32,15 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
 
     private userNameInput: Input
 
-    @autobind
-    private onChangeUserName(e: ChangeEvent<HTMLInputElement>) {
+    private onChangeUserName = (e: ChangeEvent<HTMLInputElement>) => {
         this.setState({...this.state, username: e.target.value})
     }
 
-    @autobind
-    private onChangePassword(e: ChangeEvent<HTMLInputElement>) {
+    private onChangePassword = (e: ChangeEvent<HTMLInputElement>) => {
         this.setState({...this.state, password: e.target.value})
     }
 
-    @autobind
-    private loadUser(u: User) {
+    private loadUser = (u: User) => {
         this.setState((prev, _) => ({...prev, username: u.username, password: u.password}))
     }
 
@@ -60,21 +58,23 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
         this.state = {
             logined: false,
             loading: false,
+            lock: false,
             username: "",
             password: "",
             warning: false,
         }
     }
 
-    @autobind
-    private emitEmpty() {
+    private emitEmpty = () => {
         this.userNameInput.focus()
         this.setState({...this.state, username: "" })
     }
 
-    @autobind
-    private handleSubmit(e: React.FormEvent<HTMLElement>) {
+    private handleSubmit = (e: React.FormEvent<HTMLElement>) => {
         e.preventDefault()
+        if (this.state.loading || this.state.lock) {
+            return
+        }
         const user = {
             username: this.state.username,
             password: this.state.password,
@@ -109,6 +109,12 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                         notification.error({message: "", description: "WebSocket連線失敗"})
                     }, 10)
                     break
+                case "WrongPassword":
+                    notification.config({placement: "topRight"})
+                    setTimeout(() => {
+                        notification.error({message: "", description: "密碼錯誤嗎？"})
+                    }, 10)
+                    break
                 case "Overloading":
                     notification.config({placement: "topRight"})
                     setTimeout(() => {
@@ -117,8 +123,12 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                     break
                 case "HeavyLogin":
                     notification.config({placement: "topRight"})
+                    this.setState((prev, props) => ({lock: true}))
                     setTimeout(() => {
-                        notification.warn({message: "", description: "登入太多次了"})
+                        this.setState((prev, props) => ({lock: false}))
+                    }, 3000)
+                    setTimeout(() => {
+                        notification.warn({message: "", description: "登入太頻繁"})
                     }, 10)
                     break
                 default:
@@ -200,7 +210,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                 />
             </Form.Item>
             <Form.Item>
-                <Button type="primary" htmlType={"submit"} block loading={this.state.loading}>{"登入"}</Button>
+                <Button type="primary" htmlType={"submit"} block disabled={this.state.lock} loading={this.state.loading}>{"登入"}</Button>
             </Form.Item>
         </Form>
         )

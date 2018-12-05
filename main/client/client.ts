@@ -27,15 +27,11 @@ export class Client extends EventEmitter {
     private timeoutDuration: number
     private readonly defaultTimeoutDuration: number = 800
 
-    private isconnected: boolean
-
     constructor() {
         super()
         this.queue = []
         this.port = 443
         this.security = true
-        this.terminal = new Terminal()
-        this.isconnected = false
     }
 
     /** 開始連線 */
@@ -54,17 +50,22 @@ export class Client extends EventEmitter {
 
                 ws.onopen = (e) => {
                     this.ws = e.target
-                    this.isconnected = true
+                    this.terminal = new Terminal()
                     this.timeoutDuration = this.defaultTimeoutDuration
                     resolve(SocketState.Connected)
                     this.emit("socket", SocketState.Connected)
                     ws.onclose = (a) => {
-                        this.isconnected = false
+                        this.terminal = null
                         resolve(SocketState.Closed)
                         this.emit("socket", SocketState.Closed)
+                        console.log("socket closed")
                     }
                     ws.onmessage = (a) => {
-                        this.read(a.data as Buffer)
+                        try {
+                            this.read(a.data as Buffer)
+                        } catch (err) {
+                            console.log(err)
+                        }
                     }
                 }
                 ws.on("error", (a) => {
@@ -86,62 +87,10 @@ export class Client extends EventEmitter {
 
     /** 是否以連接 */
     public get isOpen() {
-        return this.isconnected
-    }
-
-    /** 送出資料 */
-    protected send(data: Data, ...optionalParams: Data[]) {
-        let buffer: Buffer
-        if (optionalParams.length === 0) {
-            if (typeof data === "object") {
-                buffer = Buffer.from(data)
-            } else if (typeof data === "string") {
-                buffer = Buffer.from(Big5UAO.GetBytes(data))
-            } else if (typeof data === "number") {
-                buffer = Buffer.from([data])
-            } else {
-                buffer = data
-            }
-        } else {
-            const arr: number[] = []
-            if (typeof data === "object") {
-                data.forEach((value) => {
-                    arr.push(value)
-                })
-            } else if (typeof data === "string") {
-                Big5UAO.GetBytes(data).forEach((v) => {
-                    arr.push(v)
-                })
-            } else if (typeof data === "number") {
-                arr.push(data)
-            }
-            optionalParams.forEach((value) => {
-                if (typeof value === "object") {
-                    const a: Uint8Array = value
-                    a.forEach((v) => {
-                        arr.push(v)
-                    })
-                } else if (typeof value === "string") {
-                    const a: string = value
-                    Big5UAO.GetBytes(a).forEach((v) => {
-                        arr.push(v)
-                    })
-                } else if (typeof value === "number") {
-                    arr.push(value)
-                }
-            })
-            buffer = Buffer.from(arr)
+        if (this.ws) {
+            return this.ws.readyState === this.ws.OPEN
         }
-
-        try {
-            if (this.security) {
-                this.ws.send(buffer)
-            } else {
-                // this.tcp_socket.write(buffer)
-            }
-        } catch (e) {
-            console.error("send: " + e)
-        }
+        return false
     }
 
     private read(buffer: Buffer) {
@@ -149,8 +98,9 @@ export class Client extends EventEmitter {
         if (data.length === 0) {
             return
         }
-        this.parse(data, 0, data.length)
-
+        if (this.terminal) {
+            this.parse(data, 0, data.length)
+        }
         if (this.timeout) {
             clearTimeout(this.timeout)
             this.timeout = null
@@ -159,10 +109,14 @@ export class Client extends EventEmitter {
         }
 
         if (data.length < 1024) { // 傳送完成
-            this.emit("Updated", this.terminal)
+            if (this.terminal) {
+                this.emit("Updated", this.terminal)
+            }
         } else { // 可能完成可能沒完成
             this.timeout = setTimeout(() => {
-                this.emit("Updated", this.terminal)
+                if (this.terminal) {
+                    this.emit("Updated", this.terminal)
+                }
                 this.timeoutDuration = this.timeoutDuration * 2
                 this.timeout = null
             }, this.timeoutDuration)
@@ -170,6 +124,9 @@ export class Client extends EventEmitter {
     }
 
     private parse(data: Uint8Array, start: number, count: number) {
+        if (!this.terminal) {
+            return
+        }
         // let RAW = ""
         for (let i = start; i < start + count; i++) {
             const b = data[i]
@@ -349,5 +306,60 @@ export class Client extends EventEmitter {
 
     set TCPPort(port: number) {
         this.port = port
+    }
+
+    /** 送出資料 */
+    protected send(data: Data, ...optionalParams: Data[]) {
+        let buffer: Buffer
+        if (optionalParams.length === 0) {
+            if (typeof data === "object") {
+                buffer = Buffer.from(data)
+            } else if (typeof data === "string") {
+                buffer = Buffer.from(Big5UAO.GetBytes(data))
+            } else if (typeof data === "number") {
+                buffer = Buffer.from([data])
+            } else {
+                buffer = data
+            }
+        } else {
+            const arr: number[] = []
+            if (typeof data === "object") {
+                data.forEach((value) => {
+                    arr.push(value)
+                })
+            } else if (typeof data === "string") {
+                Big5UAO.GetBytes(data).forEach((v) => {
+                    arr.push(v)
+                })
+            } else if (typeof data === "number") {
+                arr.push(data)
+            }
+            optionalParams.forEach((value) => {
+                if (typeof value === "object") {
+                    const a: Uint8Array = value
+                    a.forEach((v) => {
+                        arr.push(v)
+                    })
+                } else if (typeof value === "string") {
+                    const a: string = value
+                    Big5UAO.GetBytes(a).forEach((v) => {
+                        arr.push(v)
+                    })
+                } else if (typeof value === "number") {
+                    arr.push(value)
+                }
+            })
+            buffer = Buffer.from(arr)
+        }
+
+        try {
+            if (this.security) {
+                this.ws.send(buffer)
+            } else {
+                // this.tcp_socket.write(buffer)
+            }
+        } catch (e) {
+            console.error("send: " + e)
+        }
     }
 }

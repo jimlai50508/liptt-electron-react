@@ -108,7 +108,7 @@ export class Control {
 
     /** (G)oodbye 再見 */
     public static Goodbye() {
-        return Buffer.from([0x47, 0x0D, 0x79, 0x0D, 0x20])
+        return Buffer.from([0x47, 0x0D, 0x79, 0x0D])
     }
 
     // PTT 信箱服務
