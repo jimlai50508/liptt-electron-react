@@ -3,13 +3,13 @@
     "compilerOptions": {
         "module": "commonjs",
         "moduleResolution": "node",  
-        "target": "es6",
+        "target": "es5",
         "lib": [
-            "dom",
             "esnext",
         ],
+        "typeRoots": []
     },
     "include": [
-        "webpack.*.ts",
-    ]
+        "../.webpack/*.ts",
+    ],
 }
