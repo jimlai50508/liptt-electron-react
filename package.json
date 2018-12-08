@@ -51,8 +51,6 @@
         "event-hooks-webpack-plugin": "^2.1.1",
         "fastdom": "^1.0.8",
         "file-loader": "^2.0.0",
-        "graphql-tag": "^2.10.0",
-        "graphql-tools": "^4.0.3",
         "html-webpack-plugin": "^3.2.0",
         "less": "^3.9.0",
         "less-loader": "^4.1.0",
@@ -89,6 +87,7 @@
         "google-auth-library": "^2.0.1",
         "googleapis": "^35.0.0",
         "graphql": "^14.0.2",
+        "graphql-tools": "^4.0.3",
         "js-base64": "^2.4.9",
         "libmime": "^4.0.1",
         "semaphore-async-await": "^1.5.1",
@@ -131,7 +130,7 @@
             "synopsis": "PTT in your life.",
             "vendor": "lightyen",
             "maintainer": "lightyen <lightyen0123@gmail.com>",
-            "description": "LiPTT 是用 Electron 軟體框架所開發的一個應用，主要的目標是擺脫傳統 Terminal 介面，用現代化UI方式呈現，無廣告的開源應用程式，獻給身為PTT鄉民一份子的你。",
+            "description": "liptt 是用 electron 軟體框架所開發的一個應用，主要的目標是擺脫傳統 Terminal 介面，用現代化UI方式呈現，無廣告的開源應用程式，獻給身為PTT鄉民一份子的你。",
             "category": "Network",
             "icon": "icons/",
             "target": [
@@ -143,7 +142,7 @@
             "target": [
                 "appx"
             ],
-            "certificateFile": "lightyen.pfx"
+            "certificateFile": "resources/appx/lightyen.pfx"
         },
         "appx": {
             "identityName": "liptt.electron.react",

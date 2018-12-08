@@ -69,13 +69,6 @@ const conf: Configuration = {
                 // include: [path.resolve(__dirname, "../renderer")],
             },
             {
-                test: /\.(graphql|gql)$/,
-                exclude: /node_modules/,
-                use: [
-                    { loader: "graphql-tag/loader" },
-                ],
-            },
-            {
                 test: /\.(png|jp(e?)g|gif|svg)$/,
                 use: [
                     { loader: "file-loader", options: { name: "assets/images/[name].[ext]" }},
