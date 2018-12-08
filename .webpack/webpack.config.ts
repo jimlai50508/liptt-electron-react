@@ -71,7 +71,6 @@ const conf: Configuration = {
                 test: /\.(graphql|gql)$/,
                 exclude: /node_modules/,
                 use: [
-                    { loader: "typings-graphql-loader" },
                     { loader: "graphql-tag/loader" },
                 ],
             },

@@ -1,9 +1,7 @@
 import React, { Component, MouseEvent, UIEvent, HTMLAttributes, CSSProperties } from "react"
-import autobind from "autobind-decorator"
 import { Spin } from "antd"
 import fastdom from "fastdom"
 import * as style from "./ScrollView.scss"
-import QueueAnim from "rc-queue-anim"
 
 interface ComponentProps extends HTMLAttributes<HTMLDivElement> {
     getMore: () => Promise<JSX.Element[]>
@@ -38,8 +36,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     private end: boolean = false
     private unmount: boolean = false
 
-    @autobind
-    private onMouseDown(e: MouseEvent<HTMLDivElement>) {
+    private onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
         e.preventDefault()
         if (this.props.autoHideThumb) {
             window.clearTimeout(this.hHide)
@@ -48,8 +45,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         this.prevMouse = { x: e.clientX, y: e.clientY }
     }
 
-    @autobind
-    private onMouseUp(e: MouseEvent<HTMLDivElement>) {
+    private onMouseUp = (e: MouseEvent<HTMLDivElement>) => {
         if (this.props.autoHideThumb) {
             this.hHide = window.setTimeout((() => {
                 if (this.hHide) {
@@ -62,8 +58,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         this.prevMouse = null
     }
 
-    @autobind
-    private onMouseMove(e: MouseEvent<HTMLDivElement>) {
+    private onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
         if (this.prevMouse) {
             const dy = e.clientY - this.prevMouse.y
             this.prevMouse = { x: e.clientX, y: e.clientY }
@@ -75,16 +70,14 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         }
     }
 
-    @autobind
-    private onScroll(e: UIEvent<HTMLDivElement>) {
+    private onScroll = (e: UIEvent<HTMLDivElement>) => {
         if (!this.lock) {
             fastdom.measure(this.onUpdate)
             this.lock = true
         }
     }
 
-    @autobind
-    private onUpdate() {
+    private onUpdate = () => {
         if (this.props.autoHideThumb && this.prevMouse === null) {
             window.clearTimeout(this.hHide)
             this.hHide = null

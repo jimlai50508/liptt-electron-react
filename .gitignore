@@ -1,10 +1,10 @@
-dist
 node_modules
-release
-package-lock.json
-./resources/credentials.json
-yarn.lock
+renderer/App/**/*.d.ts
 .webpack/*.js
+dist
+release
+resources/credentials.json
+yarn.lock
 npm-debug.log
 npm-debug.log.*
 yarn-error.log
