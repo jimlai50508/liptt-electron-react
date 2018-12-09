@@ -9,11 +9,11 @@ import {
     MenuItemConstructorOptions,
     MenuItem,
     EventEmitter,
+    shell,
 } from "electron"
 import installExtension, { REACT_DEVELOPER_TOOLS } from "electron-devtools-installer"
 import * as path from "path"
 import Semaphore from "semaphore-async-await"
-import MainWindow from "./mainWindow"
 import { name as appName } from "../../../package.json"
 import { isDevMode, RendererConsole, UserStorage, LogFile, Google } from "../utils"
 import * as fs from "fs"
@@ -41,18 +41,17 @@ import {
     GraphQLEnumType,
 } from "graphql"
 import { makeExecutableSchema, IResolverObject, IResolvers } from "graphql-tools"
-import { promisify } from "util"
-const readFile = promisify(fs.readFile)
 
 export class App {
 
-    private mainWindow: MainWindow
+    private mainWindow: BrowserWindow
     private windowOptions: BrowserWindowConstructorOptions
     private readonly iconSrc = path.join(__dirname, "../../../resources/icons/256x256.png")
     private tray: Tray
     private client: LiPTT
     private semaphore: Semaphore
     private schema: GraphQLSchema
+    private forceQuit: boolean
 
     constructor() {
         this.mainWindow = null
@@ -60,7 +59,9 @@ export class App {
         this.windowOptions = {
             title: appName,
             show: false,
-            frame: false,
+            frame: true,
+            width: 1050,
+            height: 590,
             zoomToPageWidth: false,
             backgroundColor: "#312450",
             icon: this.iconSrc,
@@ -139,16 +140,28 @@ export class App {
         })
 
         app.on("before-quit", () => {
-            this.mainWindow.forceQuit = true
+            this.forceQuit = true
         })
 
         const menuTemplate: MenuItemConstructorOptions[] = [
             {
                 label: "File", submenu: [
-                    { label: "File" },
+                    {
+                        label: "File",
+                        click: () => {
+                            shell.openExternal("https://www.google.com.tw/")
+                            // const name = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), "package.json"), "utf8")).name
+                            // const appData = path.join(app.getPath("appData"), name)
+                            // fs.readdir(appData, (err, files) => {
+                            //     if (err) {
+                            //         return
+                            //     }
+                            //     RendererConsole.error(files)
+                            // })
+                        },
+                    },
                     {
                         label: "Quit",
-                        // accelerator: process.platform === "win32" ? "Ctrl+Q" : "Cmd+Q",
                         click: () => {
                             this.quit()
                         },
@@ -165,6 +178,14 @@ export class App {
             label: "View",
             submenu: [
                 {
+                    label: "Toggle Menu Bar",
+                    accelerator: "F9",
+                    click: (_menuitem: MenuItem, w: BrowserWindow, _: Electron.Event) => {
+                        const v = w.isMenuBarVisible()
+                        w.setMenuBarVisibility(!v)
+                    },
+                },
+                {
                     label: "Toggle FullScreen",
                     accelerator: (() => {
                         if (process.platform === "darwin") {
@@ -173,9 +194,11 @@ export class App {
                             return "F11"
                         }
                     })(),
-                    click: (_: MenuItem, focusedWindow: BrowserWindow) => {
-                        if (focusedWindow) {
-                            focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
+                    click: (_: MenuItem, w: BrowserWindow) => {
+                        if (w) {
+                            const isFullScreen = w.isFullScreen()
+                            w.setMenuBarVisibility(isFullScreen)
+                            w.setFullScreen(!isFullScreen)
                         }
                     },
                 },
@@ -191,15 +214,7 @@ export class App {
 
         const mainMenu: Menu = Menu.buildFromTemplate(menuTemplate)
         Menu.setApplicationMenu(mainMenu)
-
-        if (!isDevMode()) {
-            if (this.mainWindow.setMenuBarVisibility) {
-                console.log("it is exist")
-            } else {
-                console.log("it is NOT exist")
-            }
-            this.mainWindow.setMenuBarVisibility(false)
-        }
+        this.mainWindow.setMenuBarVisibility(false)
     }
 
     private async quit() {
@@ -209,12 +224,28 @@ export class App {
     }
 
     private newWindow() {
-        this.mainWindow = new MainWindow(this.windowOptions)
+        this.mainWindow = new BrowserWindow(this.windowOptions)
+        this.mainWindow.loadURL(path.join("file://", __dirname, "../../renderer/index.html"))
+
+        this.mainWindow.on("blur", () => {
+            // 按下tray, blur事件完成後, 還會觸發tray的click事件
+            // this.hide()
+        })
+
+        this.mainWindow.on("focus", () => {
+            this.mainWindow.webContents.send("update:focus")
+        })
+
+        this.mainWindow.once("ready-to-show", () => {
+            this.mainWindow.maximize()
+            this.mainWindow.show()
+        })
+
         RendererConsole.window = this.mainWindow
         this.mainWindow.on("close", (event) => {
-            if (!this.mainWindow.forceQuit) {
+            if (!this.forceQuit) {
                 event.preventDefault()
-                this.mainWindow.forceQuit = true
+                this.forceQuit = true
                 this.quit()
             }
         })

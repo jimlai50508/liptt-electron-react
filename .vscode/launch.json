@@ -6,7 +6,7 @@
             "type": "node",
             "request": "launch",
             "name": "electron",
-            "preLaunchTask": "建置(electron dev)",
+            "preLaunchTask": "建置(electron development)",
             "program": "${workspaceFolder}/dist/main/index.js",
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
             "windows": {
