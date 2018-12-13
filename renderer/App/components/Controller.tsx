@@ -17,17 +17,17 @@ interface ComponentState {
 export default class extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
-        ipcRenderer.on("console-log", (_e: EventEmitter, obj: {message: string, optionalParams: any[]}) => {
+        ipcRenderer.on("console-log", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
             if (obj.message || obj.optionalParams.length) {
                 console.log(obj.message, ...obj.optionalParams)
             }
         })
-        ipcRenderer.on("console-warn", (_e: EventEmitter, obj: {message: string, optionalParams: any[]}) => {
+        ipcRenderer.on("console-warn", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
             if (obj.message || obj.optionalParams.length) {
                 console.warn(obj.message, ...obj.optionalParams)
             }
         })
-        ipcRenderer.on("console-error", (_e: EventEmitter, obj: {message: string, optionalParams: any[]}) => {
+        ipcRenderer.on("console-error", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
             if (obj.message || obj.optionalParams.length) {
                 console.error(obj.message, ...obj.optionalParams)
             }

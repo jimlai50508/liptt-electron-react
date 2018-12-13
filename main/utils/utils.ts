@@ -36,7 +36,8 @@ export class RendererConsole {
 
 export class LogFile {
 
-    private static store: ElectronStore = new ElectronStore({ name: "log" })
+    private static readonly storeName = "user"
+    private static store: ElectronStore = new ElectronStore({ name: LogFile.storeName })
 
     constructor(name: string) {
         LogFile.store = new ElectronStore({

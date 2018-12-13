@@ -1,6 +1,5 @@
 import React, { Component, MouseEvent } from "react"
 import { Redirect } from "react-router-dom"
-import autobind from "autobind-decorator"
 import { Icon } from "antd"
 import { version as antdVersion } from "antd"
 import { Layout, Menu, Button, Row, Col, notification } from "antd"
@@ -37,13 +36,11 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
     private reactionDisposer: IReactionDisposer
     private isLogout: boolean
 
-    @autobind
-    private onCollapse(collapsed: boolean) {
+    private onCollapse = (collapsed: boolean) => {
         this.setState({...this.state, collapsed})
     }
 
-    @autobind
-    private onMenuClick(param: ClickParam) {
+    private onMenuClick = (param: ClickParam) => {
         if (param.key !== this.state.activeMenu) {
             setTimeout(() => {
                 this.setState((prev, _) => ({...prev, activeMenu: param.key}))
@@ -51,8 +48,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
         }
     }
 
-    @autobind
-    private onLogout(e: MouseEvent<HTMLElement>) {
+    private onLogout = (e: MouseEvent<HTMLElement>) => {
         const gql = `mutation { logout }`
         this.isLogout = false
         PromiseIpcRenderer.send(ApiRoute.GraphQL, gql)

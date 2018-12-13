@@ -3,35 +3,38 @@
     "tasks": [
         {
             "label": "取得相依性套件(nodejs)",
-            "group": "build",
+            "group": "none",
             "type": "shell",
             "command": "yarn",
             "args": [
                 "install"
             ],
-            "problemMatcher": "$eslint-stylish"
+            "problemMatcher": [],
         },
         {
             "label": "clear dist(electron)",
-            "group": "build",
+            "group": "none",
             "type": "shell",
             "command": "rm -rf dist/main",
             "windows": {
                 "command": "if exist \"dist\\main\\\" RD /s /q .\\dist\\main\\"
-            },
+            }
         },
         {
-            "label": "建置(electron prod)",
-            "group": "build",
+            "label": "建置(electron production)",
+            "group": "none",
             "type": "shell",
             "command": "node_modules/.bin/tsc",
             "windows": {
                 "command": "node_modules\\.bin\\tsc.cmd"
             },
             "args": [
-                "--project", "main/",
-                "--outDir", "dist/main/",
-                "--sourceMap", "false"
+                "--project",
+                "main/",
+                "--outDir",
+                "dist/main/",
+                "--sourceMap",
+                "false"
             ],
             "dependsOn": [
                 "clear dist(electron)"
@@ -39,20 +42,20 @@
             "problemMatcher": "$tsc"
         },
         {
-            "label": "建置(electron dev)",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "label": "建置(electron development)",
+            "group": "build",
             "type": "shell",
             "command": "node_modules/.bin/tsc",
             "windows": {
                 "command": "node_modules\\.bin\\tsc.cmd"
             },
             "args": [
-                "--project", "main/",
-                "--outDir", "dist/main/",
-                "--sourceMap", "true"
+                "--project",
+                "main/",
+                "--outDir",
+                "dist/main/",
+                "--sourceMap",
+                "true"
             ],
             "dependsOn": [
                 "clear dist(electron)"
@@ -68,22 +71,22 @@
                 "run",
                 "webpack-development"
             ],
-            "dependsOn":[
-                "建置(webpack config)",
+            "dependsOn": [
+                "建置(webpack config)"
             ],
             "problemMatcher": "$awesometsc"
         },
         {
             "label": "建置(webpack production)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "yarn",
             "args": [
                 "run",
                 "webpack-production"
             ],
-            "dependsOn":[
-                "建置(webpack config)",
+            "dependsOn": [
+                "建置(webpack config)"
             ],
             "problemMatcher": "$awesometsc"
         },
@@ -100,9 +103,9 @@
             "problemMatcher": "$awesometsc"
         },
         {
-            "label": "建置(webpack config)",
+            "label": "建置(webpack configuration)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "node_modules/.bin/tsc",
             "windows": {
                 "command": "node_modules\\.bin\\tsc.cmd"
@@ -112,26 +115,6 @@
                 ".webpack/",
                 "--outDir",
                 ".webpack/"
-            ],
-            "problemMatcher": "$tsc"
-        },
-        {
-            "label": "監看(webpack config)",
-            "type": "shell",
-            "group": "build",
-            "isBackground": true,
-            "command": "node_modules/.bin/tsc",
-            "windows": {
-                "command": "node_modules\\.bin\\tsc.cmd"
-            },
-            "args": [
-                "--project",
-                ".webpack/",
-                "--watch",
-                "--outDir",
-                ".webpack/",
-                "--diagnostics",
-                "false"
             ],
             "problemMatcher": "$tsc"
         },
@@ -159,7 +142,7 @@
         {
             "label": "Release 安裝包(實驗中)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "electron-builder",
             "linux": {
                 "args": [
@@ -173,14 +156,13 @@
             },
             "windows": {
                 "args": [
-                    "--win",
+                    "--win"
                 ]
             },
             "dependsOn": [
                 "建置(webpack production)",
-                "建置(electron prod)",
+                "建置(electron production)",
             ],
-            "problemMatcher": "$eslint-stylish"
         }
     ]
 }

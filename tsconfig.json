@@ -28,7 +28,6 @@
         "renderer/**/*.d.ts",
     ],
     "exclude": [
-        "node_modules",
         "dist",
         "main",
     ]

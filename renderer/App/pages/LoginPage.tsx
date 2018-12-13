@@ -1,6 +1,5 @@
 import React, { Component, ChangeEvent } from "react"
 import { Redirect } from "react-router-dom"
-// import autobind from "autobind-decorator"
 import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
 import { PromiseIpcRenderer, User, PTTState, StateString, ApiRoute } from "model"

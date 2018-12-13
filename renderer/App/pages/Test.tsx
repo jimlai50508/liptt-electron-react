@@ -1,6 +1,5 @@
 import React, { Component } from "react"
 import { Layout } from "antd"
-import autobind from "autobind-decorator"
 import { ScrollView } from "../components/ScrollView/ScrollView"
 import { Row, Button } from "antd"
 import Semaphore from "semaphore-async-await"
@@ -44,8 +43,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
         this.lock = new Semaphore(1)
     }
 
-    @autobind
-    private async getMore(): Promise<JSX.Element[]> {
+    private getMore = async (): Promise<JSX.Element[]> => {
         await this.lock.wait()
         const ans = await PromiseIpcRenderer.send<ArticleAbstract[]>("/board/get-more")
         if (ans.length === 0) {

@@ -1,7 +1,6 @@
 import React, { Component } from "react"
 import { Button } from "antd"
 import QueueAnim from "rc-queue-anim"
-import autobind from "autobind-decorator"
 
 interface ComponentProps {
 
@@ -18,8 +17,7 @@ export class AnimePage extends Component<ComponentProps, ComponentState> {
         this.state = { show: false }
     }
 
-    @autobind
-    private onClick() {
+    private onClick = () => {
         this.setState({ show: !this.state.show })
     }
 

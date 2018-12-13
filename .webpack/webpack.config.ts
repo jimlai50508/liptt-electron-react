@@ -6,13 +6,14 @@ import * as shell from "shelljs"
 import TsImportPlugin = require("ts-import-plugin")
 import * as HtmlWebpackPlugin from "html-webpack-plugin"
 import * as MiniCssExtractPlugin from "mini-css-extract-plugin"
+const packageJSON = require("../package.json")
 // var nodeExternals = require('webpack-node-externals')
 const entry: Entry = {
     index:  "./renderer/index.tsx",
 }
 
 const titles = {
-    index: "LiPTT",
+    index: packageJSON.name,
 }
 
 const distPath = path.resolve(__dirname, "../dist/renderer")
@@ -66,14 +67,6 @@ const conf: Configuration = {
                 },
                 exclude: /node_modules/,
                 // include: [path.resolve(__dirname, "../renderer")],
-            },
-            {
-                test: /\.(graphql|gql)$/,
-                exclude: /node_modules/,
-                use: [
-                    { loader: "typings-graphql-loader" },
-                    { loader: "graphql-tag/loader" },
-                ],
             },
             {
                 test: /\.(png|jp(e?)g|gif|svg)$/,
