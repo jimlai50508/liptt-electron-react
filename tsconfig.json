@@ -1,34 +1,23 @@
 {
-    "extends": "./.config/tsconfig.base",
-    "compilerOptions": {
-        "jsx": "react",
-        "module": "esnext",
-        "moduleResolution": "node",
-        "target": "es6",
-        "lib": [
-            "esnext",
-            "dom",
-        ],
-        "types": [
-        ],
-        "paths": {
-            "renderer/*":   ["./renderer/*"],
-            "assets/*":     ["./renderer/assets/*"],
-            "components/*": ["./renderer/App/components/*"],
-            "model":        ["./main/model"],
-            "model/*":        ["./main/model/*"],
-            "encoding":     ["./main/encoding"],
-        },
-        "baseUrl": "./"
+  "extends": "./.config/tsconfig.base",
+  "compilerOptions": {
+    "jsx": "react",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target": "es6",
+    "lib": ["esnext", "dom"],
+    "types": [],
+    "paths": {
+      "renderer/*": ["./renderer/*"],
+      "assets/*": ["./renderer/assets/*"],
+      "components/*": ["./renderer/App/components/*"],
+      "model": ["./main/model"],
+      "model/*": ["./main/model/*"],
+      "encoding": ["./main/encoding"]
     },
-    "compileOnSave": false,
-    "include": [
-        "renderer/**/*",
-        "main/model/**/*",
-        "renderer/**/*.d.ts",
-    ],
-    "exclude": [
-        "dist",
-        "main",
-    ]
+    "baseUrl": "./"
+  },
+  "compileOnSave": false,
+  "include": ["renderer/**/*", "main/model/**/*", "renderer/**/*.d.ts"],
+  "exclude": ["dist", "main"]
 }

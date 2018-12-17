@@ -1,11 +1,13 @@
-
 import { HotModuleReplacementPlugin, NamedChunksPlugin, NamedModulesPlugin } from "webpack"
 import * as webpackMerge from "webpack-merge"
 import baseWebpackConfig from "./webpack.config"
 
 export default webpackMerge(baseWebpackConfig, {
     performance: {
-        hints: "warning",
+        hints: false,
+        assetFilter: (filename: string) => {
+            return filename.endsWith(".css") || filename.endsWith(".js")
+        },
     },
     mode: "development",
     devtool: "source-map",
@@ -14,9 +16,5 @@ export default webpackMerge(baseWebpackConfig, {
         poll: 1000,
         ignored: ["renderer/**/*.js", "node_modules"],
     },
-    plugins: [
-        new HotModuleReplacementPlugin(),
-        new NamedModulesPlugin(),
-        new NamedChunksPlugin(),
-    ],
+    plugins: [new HotModuleReplacementPlugin(), new NamedModulesPlugin(), new NamedChunksPlugin()],
 })

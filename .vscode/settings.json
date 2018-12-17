@@ -1,13 +1,19 @@
 {
     "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "typescript.preferences.quoteStyle": "double",
+    "formatFiles.excludePattern": "node_modules,dist,release,.webpack/*.js,docs/terminal/fullwidth/b2u.js,main/encoding/b2u.ts,main/encoding/u2b.ts,.gitignore,.editorconfig,yarn.lock",
+    "files.associations": { "*.ejs": "html", ".prettierrc": "json" },
     "terminal.integrated.env.windows": {
         "PATH": "${workspaceFolder}\\node_modules\\.bin;${env:PATH}"
     },
     "terminal.integrated.env.linux": {
         "PATH": "${workspaceFolder}/node_modules/.bin:${env:PATH}"
     },
+    "terminal.integrated.env.osx": {
+        "PATH": "${workspaceFolder}/node_modules/.bin:${env:PATH}"
+    },
     "npm.autoDetect": "off",
     "typescript.tsc.autoDetect": "off",
-    "typescript.preferences.quoteStyle": "double",
     "typescript.tsdk": "node_modules/typescript/lib"
 }

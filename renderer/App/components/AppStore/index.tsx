@@ -6,7 +6,6 @@ export interface ISocket {
 }
 
 export class AppStore {
-
     public socket: SocketStore
 
     constructor() {

@@ -4,23 +4,16 @@ interface ComponentProps {
     name: string
 }
 
-interface ComponentState {
-
-}
+interface ComponentState {}
 
 export class Template extends Component<ComponentProps, ComponentState> {
-
     private onHello = () => {
         return "hello"
     }
 
     public render() {
-        return(
-            <button onClick={this.onHello} />
-        )
+        return <button onClick={this.onHello} />
     }
 }
 
-const Temp: React.SFC<ComponentProps> = (props) => (
-    <div>{props.children}</div>
-)
+const Temp: React.SFC<ComponentProps> = props => <div>{props.children}</div>

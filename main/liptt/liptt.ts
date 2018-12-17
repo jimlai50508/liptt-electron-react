@@ -20,7 +20,6 @@ import { MailCache } from "./mailCollection"
 type byte = number
 
 export class LiPTT extends Client {
-
     /** "[]" "<>" "［］" "《》" */
     private readonly bracketReg = /[\u005b\u003c\uff3b\u300a]{1}[^\u005b\u003c\uff3b\u300a\u005d\u003e\uff3d\u300b]+[\u005d\u003e\uff3d\u300b]{1}/
     /** "()" */
@@ -85,43 +84,44 @@ export class LiPTT extends Client {
         const result = await this.connect()
         if (result !== SocketState.Connected) {
             switch (result) {
-            case SocketState.Failed:
-                return PTTState.WebSocketFailed
-            case SocketState.Closed:
-                return PTTState.WebSocketClosed
-            case SocketState.TelnetNotSupported:
-                return PTTState.WebSocketFailed
-            default:
-                return PTTState.None
+                case SocketState.Failed:
+                    return PTTState.WebSocketFailed
+                case SocketState.Closed:
+                    return PTTState.WebSocketClosed
+                case SocketState.TelnetNotSupported:
+                    return PTTState.WebSocketFailed
+                default:
+                    return PTTState.None
             }
         }
 
         this.username = username
 
-        const waitState = () => new Promise<PTTState>(resolve => {
-            let c = 0
-            const id = setInterval(() => {
-                c++
-                switch (this.snapshotStat) {
-                case PTTState.Username:
-                    clearInterval(id)
-                    resolve(this.snapshotStat)
-                    break
-                case PTTState.Overloading:
-                    clearInterval(id)
-                    resolve(this.snapshotStat)
-                    break
-                default:
-                    if (c > 30) {
-                        clearInterval(id)
-                        resolve(PTTState.Timeout)
-                    } else {
-                        resolve(this.snapshotStat)
+        const waitState = () =>
+            new Promise<PTTState>(resolve => {
+                let c = 0
+                const id = setInterval(() => {
+                    c++
+                    switch (this.snapshotStat) {
+                        case PTTState.Username:
+                            clearInterval(id)
+                            resolve(this.snapshotStat)
+                            break
+                        case PTTState.Overloading:
+                            clearInterval(id)
+                            resolve(this.snapshotStat)
+                            break
+                        default:
+                            if (c > 30) {
+                                clearInterval(id)
+                                resolve(PTTState.Timeout)
+                            } else {
+                                resolve(this.snapshotStat)
+                            }
+                            break
                     }
-                    break
-                }
-            }, 100)
-        })
+                }, 100)
+            })
 
         let s = await waitState()
         while (s !== PTTState.Username) {
@@ -137,13 +137,13 @@ export class LiPTT extends Client {
     }
 
     private async _login(user: string, pass: string): Promise<PTTState> {
-        let [, stat] = await this.Send(user, 0x0D)
+        let [, stat] = await this.Send(user, 0x0d)
 
         if (stat !== PTTState.Password) {
             return stat
         }
 
-        [, stat] = await this.Send(pass, 0x0D)
+        ;[, stat] = await this.Send(pass, 0x0d)
 
         if (stat !== PTTState.Accept) {
             return stat
@@ -153,47 +153,47 @@ export class LiPTT extends Client {
 
         while (stat !== PTTState.MainPage) {
             switch (stat) {
-            case PTTState.HeavyLogin:
-                // 關閉連線
-                this.close()
-                return stat
-            case PTTState.Log:
-                [, stat] = await this.Send(Control.No()) // 刪除錯誤的登入紀錄
-                while (stat === PTTState.Log) {
-                    [, stat] = await this.WaitForNext()
-                }
-                break
-            case PTTState.AlreadyLogin:
-                [, stat] = await this.Send(Control.Yes()) // 刪除重複的連線
-                while (stat === PTTState.AlreadyLogin) {
-                    [, stat] = await this.WaitForNext()
-                }
-                break
-            case PTTState.UnsavedFile:
-                [, stat] = await this.Send("q", 0x0D) // 文章或信件尚未完成，不儲存
-                while (stat === PTTState.UnsavedFile) {
-                    [, stat] = await this.WaitForNext()
-                }
-                break
-            case PTTState.MailOverflow:
-                const regex = /您保存信件數目 (\d+) 超出上限 (\d+), 請整理/
-                const match = regex.exec(this.snapshot.GetString(23))
-                if (match) {
-                    this.mailCache.size = parseInt(match[1].toString(), 10)
-                    this.mailCache.maxSize = parseInt(match[2].toString(), 10)
-                }
-                [, stat] = await this.Send(Control.Left())
-                break
-            case PTTState.MailList:
-            case PTTState.Article:
-            case PTTState.Favorite:
-            case PTTState.Hot:
-            case PTTState.AnyKey:
-                [, stat] = await this.Send(Control.Left())
-                break
-            default:
-                [, stat] = await this.WaitForNext()
-                break
+                case PTTState.HeavyLogin:
+                    // 關閉連線
+                    this.close()
+                    return stat
+                case PTTState.Log:
+                    ;[, stat] = await this.Send(Control.No()) // 刪除錯誤的登入紀錄
+                    while (stat === PTTState.Log) {
+                        ;[, stat] = await this.WaitForNext()
+                    }
+                    break
+                case PTTState.AlreadyLogin:
+                    ;[, stat] = await this.Send(Control.Yes()) // 刪除重複的連線
+                    while (stat === PTTState.AlreadyLogin) {
+                        ;[, stat] = await this.WaitForNext()
+                    }
+                    break
+                case PTTState.UnsavedFile:
+                    ;[, stat] = await this.Send("q", 0x0d) // 文章或信件尚未完成，不儲存
+                    while (stat === PTTState.UnsavedFile) {
+                        ;[, stat] = await this.WaitForNext()
+                    }
+                    break
+                case PTTState.MailOverflow:
+                    const regex = /您保存信件數目 (\d+) 超出上限 (\d+), 請整理/
+                    const match = regex.exec(this.snapshot.GetString(23))
+                    if (match) {
+                        this.mailCache.size = parseInt(match[1].toString(), 10)
+                        this.mailCache.maxSize = parseInt(match[2].toString(), 10)
+                    }
+                    ;[, stat] = await this.Send(Control.Left())
+                    break
+                case PTTState.MailList:
+                case PTTState.Article:
+                case PTTState.Favorite:
+                case PTTState.Hot:
+                case PTTState.AnyKey:
+                    ;[, stat] = await this.Send(Control.Left())
+                    break
+                default:
+                    ;[, stat] = await this.WaitForNext()
+                    break
             }
         }
         if (stat === PTTState.MainPage) {
@@ -215,9 +215,9 @@ export class LiPTT extends Client {
         }
         let [, s] = await this.Send(Control.Left())
         while (s !== PTTState.MainPage) {
-            [, s] = await this.Send(Control.Left())
+            ;[, s] = await this.Send(Control.Left())
         }
-        [, s] = await this.Send(Control.Goodbye())
+        ;[, s] = await this.Send(Control.Goodbye())
         this.logined = false
         if (s === PTTState.Quit) {
             // 最後一步
@@ -227,21 +227,19 @@ export class LiPTT extends Client {
     }
 
     public async getFavorite(): Promise<FavoriteItem[]> {
-
         let term: Terminal = this.snapshot
         let stat: PTTState = this.snapshotStat
         while (stat !== PTTState.MainPage) {
-            [term, stat] = await this.Send(Control.Left())
+            ;[term, stat] = await this.Send(Control.Left())
         }
 
         const items: FavoriteItem[] = []
-        let ok = true;
-
-        [term, stat] = await this.Send(Control.Favorite())
+        let ok = true
+        ;[term, stat] = await this.Send(Control.Favorite())
 
         let first = term.GetSubstring(3, 0, 2).trim()
         if (first !== "●" && first !== ">") {
-            [term, stat] = await this.Send(Control.Home())
+            ;[term, stat] = await this.Send(Control.Home())
         }
 
         while (stat === PTTState.Favorite && ok) {
@@ -267,12 +265,12 @@ export class LiPTT extends Client {
                 let itemType = FavoriteItemType.Board
 
                 switch (typeStr) {
-                case "目錄":
-                    itemType = FavoriteItemType.Folder
-                    break
-                case "":
-                    itemType = FavoriteItemType.Horizontal
-                    break
+                    case "目錄":
+                        itemType = FavoriteItemType.Folder
+                        break
+                    case "":
+                        itemType = FavoriteItemType.Horizontal
+                        break
                 }
                 if (itemType === FavoriteItemType.Horizontal) {
                     items.push({
@@ -307,13 +305,13 @@ export class LiPTT extends Client {
             }
 
             if (ok) {
-                [term, stat] = await this.Send(Control.PageDown())
+                ;[term, stat] = await this.Send(Control.PageDown())
             }
         }
 
         first = term.GetSubstring(3, 0, 2).trim()
         if (first !== "●" && first !== ">") {
-            [term, stat] = await this.Send(Control.Home())
+            ;[term, stat] = await this.Send(Control.Home())
         }
         await this.Send(Control.Left())
         return items
@@ -323,24 +321,24 @@ export class LiPTT extends Client {
         let t: Terminal = this.snapshot
         let s: PTTState = this.snapshotStat
         while (s !== PTTState.MainPage) {
-            [t, s] = await this.Send(Control.Left())
+            ;[t, s] = await this.Send(Control.Left())
         }
 
-        [t, s] = await this.Send(Control.Class())
+        ;[t, s] = await this.Send(Control.Class())
 
         const items: HotItem[] = []
         let row = this.rowOfCursor(t)
         let found = t.GetString(row).includes("即時熱門看板")
 
         while (!found) {
-            [t, s] = await this.Send(Control.Up())
+            ;[t, s] = await this.Send(Control.Up())
             row = this.rowOfCursor(t)
             found = t.GetString(row).includes("即時熱門看板")
         }
-        [t, s] = await this.Send(Control.r())
+        ;[t, s] = await this.Send(Control.r())
         const first = t.GetSubstring(3, 0, 2).trim()
         if (first !== "●" && first !== ">") {
-            [t, s] = await this.Send(Control.Home())
+            ;[t, s] = await this.Send(Control.Home())
         }
 
         let ok = true
@@ -380,19 +378,18 @@ export class LiPTT extends Client {
             }
 
             if (ok) {
-                [t, s] = await this.Send(Control.PageDown())
+                ;[t, s] = await this.Send(Control.PageDown())
             }
         }
 
         await this.Send(Control.Home())
         while (s !== PTTState.MainPage) {
-            [t, s] = await this.Send(Control.Left())
+            ;[t, s] = await this.Send(Control.Left())
         }
         return items
     }
 
     public async enterBoard(board: string): Promise<boolean> {
-
         if (!/[0-9A-Za-z_\-]+/.test(board)) {
             return false
         }
@@ -401,16 +398,16 @@ export class LiPTT extends Client {
         let s: PTTState = this.snapshotStat
 
         while (s !== PTTState.MainPage) {
-            [t, s] = await this.Send(Control.Left())
+            ;[t, s] = await this.Send(Control.Left())
         }
 
-        [t, s] = await this.Send(Control.BoardSuggest())
+        ;[t, s] = await this.Send(Control.BoardSuggest())
         if (s === PTTState.BoardSuggest) {
-            [t, s] = await this.Send(board, 0x0D)
+            ;[t, s] = await this.Send(board, 0x0d)
         }
         if (s === PTTState.AnyKey) {
             while (s === PTTState.AnyKey) {
-                [t, s] = await this.Send(Control.AnyKey())
+                ;[t, s] = await this.Send(Control.AnyKey())
             }
         } else if (s !== PTTState.Board) {
             return false
@@ -423,13 +420,12 @@ export class LiPTT extends Client {
         }
         nStr = nStr.trim()
         if (nStr !== "1") {
-            [t, s] = await this.Send(Control.Home())
+            ;[t, s] = await this.Send(Control.Home())
         }
         return true
     }
 
     public async getMoreArticleAbstract(count: number): Promise<ArticleAbstract[]> {
-
         if (this.snapshotStat === PTTState.Article) {
             await this.Send(Control.Left())
         }
@@ -444,10 +440,7 @@ export class LiPTT extends Client {
 
         // 抓取看板資料
         while (this.boardCache.hasMore && count > this.boardCache.remain) {
-            const [term] =
-                this.boardCache.isEmpty ?
-                await this.Send(Control.End()) :
-                await this.Send(Control.PageUp())
+            const [term] = this.boardCache.isEmpty ? await this.Send(Control.End()) : await this.Send(Control.PageUp())
 
             const ans = await this._getMoreArticleAbstract(term)
             ans.forEach(i => this.boardCache.add(i))
@@ -472,16 +465,15 @@ export class LiPTT extends Client {
     private async _getMoreArticleAbstract(term: Terminal): Promise<ArticleAbstract[]> {
         const result: ArticleAbstract[] = []
         for (let i = 22; i > 2; i--) {
-
             /// 文章編號
             let indexStr = term.GetSubstring(i, 0, 7).trim()
             let index: number = 0
 
             if (indexStr[0] === "●" || indexStr[0] === ">") {
                 indexStr =
-                    indexStr[1] === " " ?
-                    indexStr = indexStr.slice(2).trim() :
-                    (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
+                    indexStr[1] === " "
+                        ? (indexStr = indexStr.slice(2).trim())
+                        : (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
             }
 
             if (indexStr === "★") {
@@ -505,15 +497,15 @@ export class LiPTT extends Client {
             let like: number
             const echoStr = term.GetSubstring(i, 9, 11)
             switch (echoStr[0]) {
-            case "爆":
-                like = 100
-                break
-            case "X":
-                like = echoStr[1] === "X" ? -100 : parseInt(echoStr[1], 10) * -10
-                break
-            default:
-                like = parseInt(echoStr, 10)
-                break
+                case "爆":
+                    like = 100
+                    break
+                case "X":
+                    like = echoStr[1] === "X" ? -100 : parseInt(echoStr[1], 10) * -10
+                    break
+                default:
+                    like = parseInt(echoStr, 10)
+                    break
             }
 
             /// 文章狀態
@@ -533,18 +525,18 @@ export class LiPTT extends Client {
             const typeStr = term.GetSubstring(i, 30, 32)
             let type: ArticleType
             switch (typeStr) {
-            case "□":
-                type = ArticleType.一般
-                break
-            case "R:":
-                type = ArticleType.回覆
-                break
-            case "轉":
-                type = ArticleType.轉文
-                break
-            default:
-                type = ArticleType.未定義
-                break
+                case "□":
+                    type = ArticleType.一般
+                    break
+                case "R:":
+                    type = ArticleType.回覆
+                    break
+                case "轉":
+                    type = ArticleType.轉文
+                    break
+                default:
+                    type = ArticleType.未定義
+                    break
             }
 
             // 順便更新人氣指數
@@ -592,7 +584,6 @@ export class LiPTT extends Client {
     }
 
     public async getBoardArticleHeader(a: ArticleAbstract): Promise<ArticleHeader> {
-
         let h: ArticleHeader = {
             hasHeader: false,
             deleted: false,
@@ -607,13 +598,13 @@ export class LiPTT extends Client {
             return h
         }
 
-        if ((s !== PTTState.Board) && (s !== PTTState.Article)) {
+        if (s !== PTTState.Board && s !== PTTState.Article) {
             return {}
         }
 
-        [t, s] = await this.goToArticle(a.aid)
+        ;[t, s] = await this.goToArticle(a.aid)
         if (s === PTTState.Board) {
-            [t, s] = await this.Send(Control.r())
+            ;[t, s] = await this.Send(Control.r())
         } else {
             await this.Send(Control.AnyKey())
             h.deleted = true
@@ -651,7 +642,10 @@ export class LiPTT extends Client {
                         }
                     }
                     if (g[1]) {
-                        h.category = g[1].toString().slice(1, -1).trim()
+                        h.category = g[1]
+                            .toString()
+                            .slice(1, -1)
+                            .trim()
                     }
                     if (g[2]) {
                         h.title = g[2].toString().trim()
@@ -663,7 +657,7 @@ export class LiPTT extends Client {
                     h.date = g.reduce((ans, cur) => ans + " " + cur)
                 }
             }
-            h = {...h, aid: a.aid, url: a.url, coin: a.coin}
+            h = { ...h, aid: a.aid, url: a.url, coin: a.coin }
             await this.Send(Control.Left())
         } else {
             h.deleted = true
@@ -674,11 +668,10 @@ export class LiPTT extends Client {
     }
 
     private async goToArticle(aid: string): Promise<[Terminal, PTTState]> {
-        return this.Send(aid, 0x0D)
+        return this.Send(aid, 0x0d)
     }
 
     public async getMoreArticleContent(h: ArticleHeader): Promise<Block[][]> {
-
         if (!h.aid || !h.board) {
             this.curArticle = null
             return []
@@ -692,7 +685,7 @@ export class LiPTT extends Client {
         const reset: boolean = this.curArticle ? false : true
 
         if (!this.curArticle) {
-            this.curArticle = {...h}
+            this.curArticle = { ...h }
         }
 
         const regex = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
@@ -708,16 +701,16 @@ export class LiPTT extends Client {
                 if (!h.board) {
                     return []
                 }
-                if (!await this.enterBoard(h.board)) {
+                if (!(await this.enterBoard(h.board))) {
                     return []
                 }
             } else if (this.snapshotStat === PTTState.Board) {
-                [t, s] = await this.Send(h.aid, 0x0D, 0x72)
+                ;[t, s] = await this.Send(h.aid, 0x0d, 0x72)
                 if (s !== PTTState.Article) {
                     this.curArticle = null
                     return []
                 }
-                this.curArticle = {...h}
+                this.curArticle = { ...h }
                 this.curArticleContent = []
                 break
             } else if (this.snapshotStat === PTTState.Article) {
@@ -756,13 +749,13 @@ export class LiPTT extends Client {
 
         if (reset) {
             if (!beginTest(t)) {
-                [t, s] = await this.Send(Control.Home())
+                ;[t, s] = await this.Send(Control.Home())
             }
         } else if (pagedown) {
             if (endTest(t)) {
                 return []
             }
-            [t, s] = await this.Send(Control.PageDown())
+            ;[t, s] = await this.Send(Control.PageDown())
         }
 
         const match = regex.exec(t.GetString(23))
@@ -806,26 +799,26 @@ export class LiPTT extends Client {
 
     private getReadState(s: string): ReadState {
         switch (s) {
-        case "+":
-            return ReadState.未讀
-        case "M":
-            return ReadState.已標記
-        case "S":
-            return ReadState.待處理
-        case "m":
-            return ReadState.已讀 | ReadState.已標記
-        case "s":
-            return ReadState.已讀 | ReadState.待處理
-        case "!":
-            return ReadState.鎖定
-        case "~":
-            return ReadState.新推文
-        case "=":
-            return ReadState.新推文 | ReadState.已標記
-        case " ":
-            return ReadState.已讀
-        default:
-            return ReadState.未定義
+            case "+":
+                return ReadState.未讀
+            case "M":
+                return ReadState.已標記
+            case "S":
+                return ReadState.待處理
+            case "m":
+                return ReadState.已讀 | ReadState.已標記
+            case "s":
+                return ReadState.已讀 | ReadState.待處理
+            case "!":
+                return ReadState.鎖定
+            case "~":
+                return ReadState.新推文
+            case "=":
+                return ReadState.新推文 | ReadState.已標記
+            case " ":
+                return ReadState.已讀
+            default:
+                return ReadState.未定義
         }
     }
 
@@ -862,33 +855,33 @@ export class LiPTT extends Client {
 
     private async enterSuggestBoard(): Promise<void> {
         switch (this.snapshotStat) {
-        case PTTState.MainPage:
-        case PTTState.Category:
-        case PTTState.Favorite:
-        case PTTState.Hot:
-        case PTTState.Board:
-        // case PTTState.Article:
-            await this.Send(Control.BoardSuggest())
-            break
-        default:
-            return
+            case PTTState.MainPage:
+            case PTTState.Category:
+            case PTTState.Favorite:
+            case PTTState.Hot:
+            case PTTState.Board:
+                // case PTTState.Article:
+                await this.Send(Control.BoardSuggest())
+                break
+            default:
+                return
         }
     }
 
     private async exitSuggestBoard(): Promise<void> {
         switch (this.snapshotStat) {
-        case PTTState.BoardSuggest:
-            let text = this.snapshot.GetString(2)
-            text = text.replace("請輸入看板名稱(按空白鍵自動搜尋):", "").trim()
-            const byteArray: byte[] = []
-            for (const _ of text) {
-                byteArray.push(0x08)
-            }
-            byteArray.push(0x0D)
-            await this.Send(Buffer.from(byteArray))
-            break
-        default:
-            return
+            case PTTState.BoardSuggest:
+                let text = this.snapshot.GetString(2)
+                text = text.replace("請輸入看板名稱(按空白鍵自動搜尋):", "").trim()
+                const byteArray: byte[] = []
+                for (const _ of text) {
+                    byteArray.push(0x08)
+                }
+                byteArray.push(0x0d)
+                await this.Send(Buffer.from(byteArray))
+                break
+            default:
+                return
         }
         await this.Send(Control.BoardSuggest())
     }
@@ -896,37 +889,37 @@ export class LiPTT extends Client {
     private popular(popuStr: string, refBlock: Block) {
         let popu: number = 0
         switch (popuStr) {
-        case "HOT":
-            popu = 100
-            break
-        case "爆!":
-            switch (refBlock.Foreground) {
-            case 37:
-                popu = 1000
+            case "HOT":
+                popu = 100
                 break
-            case 31:
-                popu = 2000
+            case "爆!":
+                switch (refBlock.Foreground) {
+                    case 37:
+                        popu = 1000
+                        break
+                    case 31:
+                        popu = 2000
+                        break
+                    case 34:
+                        popu = 5000
+                        break
+                    case 36:
+                        popu = 10000
+                        break
+                    case 32:
+                        popu = 30000
+                        break
+                    case 33:
+                        popu = 60000
+                        break
+                    case 35:
+                        popu = 100000
+                        break
+                }
                 break
-            case 34:
-                popu = 5000
+            default:
+                popu = parseInt(popuStr, 10)
                 break
-            case 36:
-                popu = 10000
-                break
-            case 32:
-                popu = 30000
-                break
-            case 33:
-                popu = 60000
-                break
-            case 35:
-                popu = 100000
-                break
-            }
-            break
-        default:
-            popu = parseInt(popuStr, 10)
-            break
         }
         return popu
     }
@@ -947,20 +940,20 @@ export class LiPTT extends Client {
         const command: number[] = []
         if (cursor !== row) {
             if (cursor > row) {
-                for (let k = 0; k < (cursor - row); k++) {
-                    command.push(0x1B, 0x5B, 0x41)
+                for (let k = 0; k < cursor - row; k++) {
+                    command.push(0x1b, 0x5b, 0x41)
                 }
             } else {
-                for (let k = 0; k < (row - cursor); k++) {
-                    command.push(0x1B, 0x5B, 0x42)
+                for (let k = 0; k < row - cursor; k++) {
+                    command.push(0x1b, 0x5b, 0x42)
                 }
             }
         }
         command.push(0x51)
         let [t] = await this.Send(Buffer.from(command))
 
-        const [aid, url, coin] = this._getAID(t);
-        [t] = await this.Send(Control.AnyKey())
+        const [aid, url, coin] = this._getAID(t)
+        ;[t] = await this.Send(Control.AnyKey())
 
         return [aid, url, coin, t]
     }
@@ -993,12 +986,12 @@ export class LiPTT extends Client {
         let t: Terminal = this.snapshot
         let s: PTTState = this.snapshotStat
         while (s !== PTTState.MainPage) {
-            [t, s] = await this.Send(Control.Left())
+            ;[t, s] = await this.Send(Control.Left())
         }
 
-        [t, s] = await this.Send(Control.CtrlU())
+        ;[t, s] = await this.Send(Control.CtrlU())
         while (s !== PTTState.EasyTalk) {
-            [t, s] = await this.WaitForNext()
+            ;[t, s] = await this.WaitForNext()
         }
 
         await this.Send(0x72)
@@ -1028,14 +1021,13 @@ export class LiPTT extends Client {
         }
         nStr = nStr.trim()
         if (nStr !== "1") {
-            [t, s] = await this.Send(Control.Home())
+            ;[t, s] = await this.Send(Control.Home())
         }
 
         return true
     }
 
     public async getMoreMailAbstract(count: number): Promise<MailAbstract[]> {
-
         if (this.snapshotStat !== PTTState.MailList || count <= 0) {
             return []
         }
@@ -1045,10 +1037,11 @@ export class LiPTT extends Client {
         }
 
         while (this.mailCache.hasMore && count > this.mailCache.remain) {
-            const [term] =
-                this.mailCache.isEmpty ?
-                (this.mailCache.size === 1 ? [this.snapshot] :  await this.Send(Control.End())) :
-                await this.Send(Control.PageUp())
+            const [term] = this.mailCache.isEmpty
+                ? this.mailCache.size === 1
+                    ? [this.snapshot]
+                    : await this.Send(Control.End())
+                : await this.Send(Control.PageUp())
 
             const ans = await this._getMoreMailAbstract(term)
             ans.forEach(i => this.mailCache.add(i))
@@ -1072,9 +1065,9 @@ export class LiPTT extends Client {
 
             if (indexStr[0] === "●" || indexStr[0] === ">") {
                 indexStr =
-                    indexStr[1] === " " ?
-                    indexStr = indexStr.slice(2).trim() :
-                    (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
+                    indexStr[1] === " "
+                        ? (indexStr = indexStr.slice(2).trim())
+                        : (term.GetSubstring(i - 1, 1, 2) + indexStr.substr(1)).trim()
             }
 
             if (indexStr !== "") {
@@ -1110,33 +1103,33 @@ export class LiPTT extends Client {
             await this.WaitForNext()
         }
 
-        [, s] = await this.Send(username, 0x0D)
+        ;[, s] = await this.Send(username, 0x0d)
         while (s !== PTTState.SendMailSubject) {
             await this.WaitForNext()
         }
 
-        [, s] = await this.Send(subject, 0x0D)
+        ;[, s] = await this.Send(subject, 0x0d)
         while (s !== PTTState.EditFile) {
             await this.WaitForNext()
         }
 
-        [, s] = await this.Send(content);
-        [, s] = await this.Send(Control.CtrlX())
+        ;[, s] = await this.Send(content)
+        ;[, s] = await this.Send(Control.CtrlX())
         while (s !== PTTState.ProcessFile) {
             await this.WaitForNext()
         }
 
-        let sign = false;
-        [, s] = await this.Send(0x73, 0x0D)
+        let sign = false
+        ;[, s] = await this.Send(0x73, 0x0d)
         while (s !== PTTState.SendMailSuccess) {
             if (s === PTTState.Signature && !sign) {
-                sign = true;
-                [, s] = await this.Send(0x30, 0x0D) // 不加簽名檔
+                sign = true
+                ;[, s] = await this.Send(0x30, 0x0d) // 不加簽名檔
             }
         }
 
-        await this.Send(Control.No()); // 不儲存草稿
-        [, s] = await this.Send(Control.AnyKey())
+        await this.Send(Control.No()) // 不儲存草稿
+        ;[, s] = await this.Send(Control.AnyKey())
         while (s !== PTTState.MailList) {
             await this.WaitForNext()
         }
@@ -1152,40 +1145,40 @@ export class LiPTT extends Client {
         }
 
         await this.Send(Control.Mail())
-        await this.Send(Control.SendMail());
-        [term, stat] = await this.Send(username, 0x0D)
+        await this.Send(Control.SendMail())
+        ;[term, stat] = await this.Send(username, 0x0d)
 
         while (stat !== PTTState.SendMailSubject) {
             if (stat === PTTState.PersonMail) {
                 await this.Send(Control.Left())
                 return "使用者不存在"
             }
-            [term, stat] = await this.WaitForNext()
+            ;[term, stat] = await this.WaitForNext()
         }
 
-        [term, stat] = await this.Send(subject, 0x0D)
+        ;[term, stat] = await this.Send(subject, 0x0d)
         while (stat !== PTTState.EditFile) {
-            [term, stat] = await this.WaitForNext()
+            ;[term, stat] = await this.WaitForNext()
         }
 
-        [term, stat] = await this.Send(content, 0x0D);
-        [term, stat] = await this.Send(Control.CtrlX())
+        ;[term, stat] = await this.Send(content, 0x0d)
+        ;[term, stat] = await this.Send(Control.CtrlX())
         while (stat !== PTTState.ProcessFile) {
-            [term, stat] = await this.WaitForNext()
+            ;[term, stat] = await this.WaitForNext()
         }
 
-        [term, stat] = await this.Send(0x73, 0x0D)
+        ;[term, stat] = await this.Send(0x73, 0x0d)
         while (stat !== PTTState.SendMailSuccess) {
             if (stat === PTTState.Signature) {
-                [term, stat] = await this.Send(0x30, 0x0D)
+                ;[term, stat] = await this.Send(0x30, 0x0d)
                 continue
             }
-            [term, stat] = await this.WaitForNext()
+            ;[term, stat] = await this.WaitForNext()
         }
 
-        [term, stat] = await this.Send(Control.No())
+        ;[term, stat] = await this.Send(Control.No())
         while (stat !== PTTState.MainPage) {
-            [term, stat] = await this.Send(Control.Left())
+            ;[term, stat] = await this.Send(Control.Left())
         }
 
         return "寄信成功"
@@ -1200,7 +1193,7 @@ export class LiPTT extends Client {
     }
 
     private WaitForNext(): Promise<[Terminal, PTTState]> {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.once("StateUpdated", (term: Terminal, stat: PTTState) => {
                 resolve([term.DeepCopy(), stat])
             })
@@ -1208,7 +1201,7 @@ export class LiPTT extends Client {
     }
 
     private Send(data: Data, ...optionalParams: Data[]): Promise<[Terminal, PTTState]> {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.once("StateUpdated", (term: Terminal, stat: PTTState) => {
                 resolve([term.DeepCopy(), stat])
             })
@@ -1217,7 +1210,7 @@ export class LiPTT extends Client {
     }
 
     private WaitClose(): Promise<void> {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             if (this.scst === SocketState.Connected) {
                 this.once("socket", (stat: SocketState) => {
                     if (stat === SocketState.Closed) {
@@ -1230,7 +1223,7 @@ export class LiPTT extends Client {
 
     private async sleep(ms = 0) {
         return new Promise(r => setTimeout(r, ms))
-      }
+    }
 
     public getState() {
         return this.snapshotStat

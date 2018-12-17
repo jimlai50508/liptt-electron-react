@@ -27,17 +27,14 @@ const columns: Array<ColumnProps<HotItem>> = [
     },
 ]
 
-interface ComponentProps {
-
-}
+interface ComponentProps {}
 
 interface ComponentState {
-    loading: boolean,
+    loading: boolean
     data: HotItem[]
 }
 
 export class Hot extends Component<ComponentProps, ComponentState> {
-
     private umount: boolean
 
     constructor(prop: ComponentProps) {
@@ -49,10 +46,9 @@ export class Hot extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<HotItem[]>(ApiRoute.getHotList)
-        .then((items) => {
+        PromiseIpcRenderer.send<HotItem[]>(ApiRoute.getHotList).then(items => {
             if (!this.umount) {
-                this.setState((prev, _) => ({...prev, data: items, loading: false}))
+                this.setState((prev, _) => ({ ...prev, data: items, loading: false }))
             }
         })
     }
@@ -62,8 +58,6 @@ export class Hot extends Component<ComponentProps, ComponentState> {
     }
 
     public render() {
-        return (
-            <Table {...this.state} columns={columns} dataSource={this.state.data}/>
-        )
+        return <Table {...this.state} columns={columns} dataSource={this.state.data} />
     }
 }

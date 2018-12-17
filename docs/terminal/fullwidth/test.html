@@ -1,108 +1,113 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <title>liptt-electron-react</title>
-    <style>
-.mainContainer {
-    display: flex;
-}
-.container {
-    display: flex;
-    padding: 0%;
-    justify-content: center;
-    align-items: center;
-    margin-left: auto;
-    margin-right: auto;
-    letter-spacing: 0px;
-    color: #9c4747;
-    font-family: "MingLiu";
-    font-size: 1.5em;
-}
-.bbsWrapper {
-    display: inline-block;
-}
-.line {
-    line-height: 0.98;
-    padding: 0;
-    margin: 0;
-    border: none;
-    display: flex;
-    align-content: center;
-    justify-content: center;
-}
-    </style>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-</head>
-<body>
-    <div class="mainContainer">
-        <div class="container">
-            <div id="output" class="bbsWrapper">
-            </div>
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+        <title>liptt-electron-react</title>
+        <style>
+            .mainContainer {
+                display: flex;
+            }
+            .container {
+                display: flex;
+                padding: 0%;
+                justify-content: center;
+                align-items: center;
+                margin-left: auto;
+                margin-right: auto;
+                letter-spacing: 0px;
+                color: #9c4747;
+                font-family: "MingLiu";
+                font-size: 1.5em;
+            }
+            .bbsWrapper {
+                display: inline-block;
+            }
+            .line {
+                line-height: 0.98;
+                padding: 0;
+                margin: 0;
+                border: none;
+                display: flex;
+                align-content: center;
+                justify-content: center;
+            }
+        </style>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <div class="mainContainer">
+            <div class="container"><div id="output" class="bbsWrapper"></div></div>
         </div>
-    </div>
-</body>
+    </body>
 
-<script src="./b2u.js"></script>
-<script>
-
-function calcWidth(code, defaultSize) {
-    const canvas = document.createElement('canvas')
-    const text = String.fromCharCode(code)
-    const ctx = canvas.getContext("2d")
-    ctx.font = `${defaultSize}px MingLiU`
-    return ctx.measureText(text).width
-}
-
-function isFullWidth(code, defaultSize) {
-    if (calcWidth(code, defaultSize) < defaultSize) {
-        return false
-    } else {
-        return true
-    }
-}
-
-
-
-$(document).ready(function(){
-
-    const htm = Object.keys(table).map(b => {
-        const u = table[b]
-        return {
-            big5: b,
-            unicode: u
+    <script src="./b2u.js"></script>
+    <script>
+        function calcWidth(code, defaultSize) {
+            const canvas = document.createElement("canvas")
+            const text = String.fromCharCode(code)
+            const ctx = canvas.getContext("2d")
+            ctx.font = `${defaultSize}px MingLiU`
+            return ctx.measureText(text).width
         }
-    })
 
-    let ans = []
-
-    const text = htm.reduce((acc, cur) => {
-        if (!isFullWidth(cur.unicode, 14)) {
-            ans.push(cur)
-            return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur.unicode + "\" class=\"line\">" + String.fromCharCode(cur.unicode) + "</div>"
-        } else {
-            return acc
+        function isFullWidth(code, defaultSize) {
+            if (calcWidth(code, defaultSize) < defaultSize) {
+                return false
+            } else {
+                return true
+            }
         }
-    }, "")
 
-    let h = []
-    for (let i = 0x20; i < 0x7F; i++) {
-        h.push(i)
-    }
-    const extra = h.reduce((acc, cur) => {
-        if (calcWidth(cur, 14) !== 7) {
-            return (typeof acc === "string" ? acc : "") + "<div id=\"" + cur + "\" class=\"line\">" + String.fromCharCode(cur) + "</div>"
-        } else {
-            return acc
-        }
-    }, "")
+        $(document).ready(function() {
+            const htm = Object.keys(table).map(b => {
+                const u = table[b]
+                return {
+                    big5: b,
+                    unicode: u,
+                }
+            })
 
-    $("#output").html(text + extra)
+            let ans = []
 
-    console.log(calcWidth(0xE575, 14))
-    console.log(calcWidth(0x2021, 14))
-})
+            const text = htm.reduce((acc, cur) => {
+                if (!isFullWidth(cur.unicode, 14)) {
+                    ans.push(cur)
+                    return (
+                        (typeof acc === "string" ? acc : "") +
+                        '<div id="' +
+                        cur.unicode +
+                        '" class="line">' +
+                        String.fromCharCode(cur.unicode) +
+                        "</div>"
+                    )
+                } else {
+                    return acc
+                }
+            }, "")
 
+            let h = []
+            for (let i = 0x20; i < 0x7f; i++) {
+                h.push(i)
+            }
+            const extra = h.reduce((acc, cur) => {
+                if (calcWidth(cur, 14) !== 7) {
+                    return (
+                        (typeof acc === "string" ? acc : "") +
+                        '<div id="' +
+                        cur +
+                        '" class="line">' +
+                        String.fromCharCode(cur) +
+                        "</div>"
+                    )
+                } else {
+                    return acc
+                }
+            }, "")
 
-</script>
+            $("#output").html(text + extra)
+
+            console.log(calcWidth(0xe575, 14))
+            console.log(calcWidth(0x2021, 14))
+        })
+    </script>
 </html>

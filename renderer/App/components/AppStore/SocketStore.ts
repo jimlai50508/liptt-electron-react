@@ -2,7 +2,6 @@ import { observable, action } from "mobx"
 import { SocketState } from "model"
 
 export class SocketStore {
-
     @observable
     public socketState: SocketState
 

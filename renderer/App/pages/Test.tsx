@@ -7,9 +7,7 @@ import { ArticleAbstract, PromiseIpcRenderer, ApiRoute } from "model"
 import { Block, toString } from "model"
 import * as style from "./Test.scss"
 
-interface ComponentProps {
-
-}
+interface ComponentProps {}
 
 interface ComponentState {
     data: ArticleAbstract[]
@@ -17,7 +15,6 @@ interface ComponentState {
 }
 
 export class Test extends Component<ComponentProps, ComponentState> {
-
     private lock: Semaphore
     private umount: boolean
     private prevab: ArticleAbstract
@@ -26,7 +23,7 @@ export class Test extends Component<ComponentProps, ComponentState> {
 
     public async componentDidMount() {
         const r = await PromiseIpcRenderer.send<boolean>(ApiRoute.goBoard, "Test")
-        this.setState((prev, _) => ({...prev, ready: r}))
+        this.setState((prev, _) => ({ ...prev, ready: r }))
     }
 
     public async componentWillUnmount() {
@@ -55,53 +52,49 @@ export class Test extends Component<ComponentProps, ComponentState> {
             return []
         }
         const result = ans.map(item => (
-        <Row
-            key={item.key}
-            style={{height: this.ih + "px"}}
-            className={style.myRow}
-        >
-            <div className={style.myDiv}>
-                <Button onClick={async () => {
+            <Row key={item.key} style={{ height: this.ih + "px" }} className={style.myRow}>
+                <div className={style.myDiv}>
+                    <Button
+                        onClick={async () => {
+                            if (this.prevab !== item) {
+                                if (this.prevab && !this.prevab.deleted) {
+                                    await PromiseIpcRenderer.send<void>("/left")
+                                }
+                                this.prevab = item
 
-                    if (this.prevab !== item) {
-                        if (this.prevab && !this.prevab.deleted) {
-                            await PromiseIpcRenderer.send<void>("/left")
-                        }
-                        this.prevab = item
+                                // const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
+                                // if (info.deleted) {
+                                //     item.deleted = info.deleted
+                                //     console.error(info)
+                                //     return
+                                // }
+                            }
 
-                        // const info = await PromiseIpcRenderer.send<ArticleHeader>("/board/article-header", item)
-                        // if (info.deleted) {
-                        //     item.deleted = info.deleted
-                        //     console.error(info)
-                        //     return
-                        // }
-                    }
-
-                    const lines = await PromiseIpcRenderer.send<Block[][]>("/article/get-more", item)
-                    lines.forEach((s) => {
-                        console.log(toString(s))
-                    })
-                }}>
-                    <span>{item.key} {item.aid} {item.type} {item.author} {item.category} {item.title}</span>
-                </Button>
-            </div>
-        </Row>))
+                            const lines = await PromiseIpcRenderer.send<Block[][]>("/article/get-more", item)
+                            lines.forEach(s => {
+                                console.log(toString(s))
+                            })
+                        }}
+                    >
+                        <span>
+                            {item.key} {item.aid} {item.type} {item.author} {item.category} {item.title}
+                        </span>
+                    </Button>
+                </div>
+            </Row>
+        ))
 
         this.lock.signal()
         return result
     }
 
     public render() {
-        return(
-            <Layout style={{position: "absolute", top: "0", bottom: "0", left: "0", right: "0"}}>
+        return (
+            <Layout style={{ position: "absolute", top: "0", bottom: "0", left: "0", right: "0" }}>
                 <Layout.Content className={style.container}>
-                    {this.state.ready ?
-                    <ScrollView
-                        getMore={this.getMore}
-                        itemHeight={this.ih}
-                        thumbHeight="18%"
-                        autoHideThumb
-                    /> : null}
+                    {this.state.ready ? (
+                        <ScrollView getMore={this.getMore} itemHeight={this.ih} thumbHeight="18%" autoHideThumb />
+                    ) : null}
                 </Layout.Content>
             </Layout>
         )

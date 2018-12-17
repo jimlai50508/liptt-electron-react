@@ -4,7 +4,6 @@ import { shell } from "electron"
 
 /** UserStorage: 使用者帳號相關設定 */
 export class UserStorage {
-
     private static readonly storeName = "user"
     private static readonly key = "liptt-electron-react"
 

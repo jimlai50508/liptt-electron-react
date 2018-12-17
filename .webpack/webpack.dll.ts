@@ -3,12 +3,7 @@ import * as EventHooksPlugin from "event-hooks-webpack-plugin"
 import * as shell from "shelljs"
 import * as path from "path"
 
-const vendor = [
-    "antd",
-    "react",
-    "react-dom",
-    "react-router-dom",
-]
+const vendor = ["antd", "react", "react-dom", "react-router-dom"]
 
 const dist = path.resolve(__dirname, "../dist/renderer/vendor")
 

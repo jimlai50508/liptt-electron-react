@@ -17,13 +17,13 @@ export class RendererConsole {
     /** 輸出警告訊息到Renderer (Development Mode) */
     public static warn(message?: any, ...optionalParams: any[]) {
         if (isDevMode()) {
-            this.window.webContents.send("console-warn", {message, optionalParams})
+            this.window.webContents.send("console-warn", { message, optionalParams })
         }
     }
 
     /** 輸出錯誤訊息到Renderer */
     public static error(message?: any, ...optionalParams: any[]) {
-        this.window.webContents.send("console-error", {message, optionalParams})
+        this.window.webContents.send("console-error", { message, optionalParams })
     }
 
     /** 清除Renderer console (Development Mode) */
@@ -35,7 +35,6 @@ export class RendererConsole {
 }
 
 export class LogFile {
-
     private static readonly storeName = "user"
     private static store: ElectronStore = new ElectronStore({ name: LogFile.storeName })
 

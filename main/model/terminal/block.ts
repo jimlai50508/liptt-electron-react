@@ -35,9 +35,11 @@ export class Block {
 
     /** 判斷相等 */
     public Equal(b: Block) {
-        return (this.Content === b.Content)
-        && (this.Attribute === b.Attribute)
-        && (this.Background === b.Background)
-        && (this.Foreground === b.Foreground)
+        return (
+            this.Content === b.Content &&
+            this.Attribute === b.Attribute &&
+            this.Background === b.Background &&
+            this.Foreground === b.Foreground
+        )
     }
 }

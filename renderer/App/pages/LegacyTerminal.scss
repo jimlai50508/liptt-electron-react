@@ -1,70 +1,46 @@
 // @import url(https://fonts.googleapis.com/earlyaccess/notosanstc.css);
 
-@media only screen 
-and (min-width: 1300px),
-screen 
-and (min-height: 680px) {
+@media only screen and (min-width: 1300px), screen and (min-height: 680px) {
     .container {
         font-size: 24px;
     }
 }
 
-@media only screen 
-and (max-width: 1300px)
-and (min-width: 1200px),
-screen 
-and (max-height: 680px)
-and (min-height: 620px) {
+@media only screen and (max-width: 1300px) and (min-width: 1200px),
+    screen and (max-height: 680px) and (min-height: 620px) {
     .container {
         font-size: 1.625em;
     }
 }
 
-@media only screen 
-and (max-width: 1200px)
-and (min-width: 1100px),
-screen 
-and (max-height: 620px)
-and (min-height: 550px) {
+@media only screen and (max-width: 1200px) and (min-width: 1100px),
+    screen and (max-height: 620px) and (min-height: 550px) {
     .container {
         font-size: 1.5em;
     }
 }
 
-@media only screen 
-and (max-width: 1100px)
-and (min-width: 880px),
-screen 
-and (max-height: 550px)
-and (min-height: 500px) {
+@media only screen and (max-width: 1100px) and (min-width: 880px),
+    screen and (max-height: 550px) and (min-height: 500px) {
     .container {
         font-size: 1.375em;
     }
 }
 
-@media only screen 
-and (max-width: 880px)
-and (min-width: 680px),
-screen 
-and (max-height: 500px)
-and (min-height: 420px) {
+@media only screen and (max-width: 880px) and (min-width: 680px),
+    screen and (max-height: 500px) and (min-height: 420px) {
     .container {
         font-size: 1em;
     }
 }
 
-@media only screen 
-and (max-width: 680px)
-and (min-width: 520px) {
+@media only screen and (max-width: 680px) and (min-width: 520px) {
     .container {
         font-size: 0.75em;
     }
 }
 
-@media only screen 
-and (max-width: 520px),
-screen
-and (max-height: 420px) {
+@media only screen and (max-width: 520px), screen and (max-height: 420px) {
     .container {
         font-size: 0.625em;
     }
@@ -76,7 +52,7 @@ and (max-height: 420px) {
 
 #cursor {
     display: inline-block;
-    font-family : MingLiu,monospace;
+    font-family: MingLiu, monospace;
     font-weight: bold;
     color: rgb(97, 255, 23);
     user-select: none;
@@ -156,8 +132,8 @@ and (max-height: 420px) {
     margin-bottom: auto;
     width: 98vw;
     color: #9c4747;
-    font-family: MingLiu,monospace;
-    transition:font-size 0.2s ease-out;
+    font-family: MingLiu, monospace;
+    transition: font-size 0.2s ease-out;
 }
 
 .bbsWrapper {

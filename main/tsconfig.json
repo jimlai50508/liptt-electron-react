@@ -1,12 +1,10 @@
 {
-    "extends": "../.config/tsconfig.base",
-    "compilerOptions": {
-        "sourceMap": true,
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "target": "esnext",
-    },
-    "include": [
-        "../main/**/*",
-    ],
+  "extends": "../.config/tsconfig.base",
+  "compilerOptions": {
+    "sourceMap": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "esnext"
+  },
+  "include": ["../main/**/*"]
 }

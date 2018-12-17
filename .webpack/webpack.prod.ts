@@ -6,6 +6,9 @@ import * as path from "path"
 export default webpackMerge(baseWebpackConfig, {
     performance: {
         hints: "warning",
+        assetFilter: (filename: string) => {
+            return filename.endsWith(".css") || filename.endsWith(".js")
+        },
     },
     mode: "production",
     optimization: {
@@ -46,7 +49,5 @@ export default webpackMerge(baseWebpackConfig, {
             // "@ant-design/icons/lib/dist$": path.resolve(__dirname, "../renderer/icons.ts"),
         },
     },
-    plugins: [
-        new ContextReplacementPlugin(/moment[/\\]locale$/, /es|zh/),
-    ],
+    plugins: [new ContextReplacementPlugin(/moment[/\\]locale$/, /es|zh/)],
 })

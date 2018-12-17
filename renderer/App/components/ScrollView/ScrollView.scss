@@ -24,7 +24,7 @@ $thumbColor: rgba(75, 211, 63, 0.7);
             background-color: $thumbColor;
             transition: background-color 0.2s;
             position: absolute;
-            left: calc(50% - #{$thumbWidth} / 2.0);
+            left: calc(50% - #{$thumbWidth} / 2);
             z-index: 1;
             &.hide {
                 background-color: rgba(0, 0, 0, 0);

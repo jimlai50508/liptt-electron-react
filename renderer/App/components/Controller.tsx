@@ -5,29 +5,25 @@ import { action } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "./AppStore"
 
-interface ComponentProps extends ISocket {
-}
+interface ComponentProps extends ISocket {}
 
-interface ComponentState {
-
-}
+interface ComponentState {}
 
 @inject("socket")
 @observer
 export default class extends Component<ComponentProps, ComponentState> {
-
     public componentDidMount() {
-        ipcRenderer.on("console-log", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
+        ipcRenderer.on("console-log", (_e: EventEmitter, obj: { message: any; optionalParams: any[] }) => {
             if (obj.message || obj.optionalParams.length) {
                 console.log(obj.message, ...obj.optionalParams)
             }
         })
-        ipcRenderer.on("console-warn", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
+        ipcRenderer.on("console-warn", (_e: EventEmitter, obj: { message: any; optionalParams: any[] }) => {
             if (obj.message || obj.optionalParams.length) {
                 console.warn(obj.message, ...obj.optionalParams)
             }
         })
-        ipcRenderer.on("console-error", (_e: EventEmitter, obj: {message: any, optionalParams: any[]}) => {
+        ipcRenderer.on("console-error", (_e: EventEmitter, obj: { message: any; optionalParams: any[] }) => {
             if (obj.message || obj.optionalParams.length) {
                 console.error(obj.message, ...obj.optionalParams)
             }
@@ -39,12 +35,12 @@ export default class extends Component<ComponentProps, ComponentState> {
             this.setSocketState(state)
         })
         ipcRenderer.on("/notification", (_: EventEmitter, options: NotificationOptions) => {
-        if (!("Notification" in window)) {
-            alert("你這個瀏覽器不支援 Notification")
+            if (!("Notification" in window)) {
+                alert("你這個瀏覽器不支援 Notification")
             } else if (Notification.permission === "granted") {
                 const noti = new Notification("liptt", options)
             } else if (Notification.permission !== "denied") {
-                Notification.requestPermission((permission) => {
+                Notification.requestPermission(permission => {
                     if (permission === "granted") {
                         const noti = new Notification("liptt", options)
                     }

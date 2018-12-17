@@ -13,7 +13,7 @@ export class Terminal {
     private content: Block[][]
     /** 代表游標當前位置(X座標) */
     private col: number
-     /** 代表游標當前位置(Y座標) */
+    /** 代表游標當前位置(Y座標) */
     private row: number
     /** 暫存的游標位置(X座標) */
     private saveCol: number
@@ -137,7 +137,7 @@ export class Terminal {
         if (this.row + n >= TerminalHeight) {
             const r = this.row + n - TerminalHeight + 1
             if (r < TerminalHeight) {
-                for (let i = 0; i < (TerminalHeight - r); i++) {
+                for (let i = 0; i < TerminalHeight - r; i++) {
                     const tmp = this.content[i]
                     this.content[i] = this.content[i + r]
                     this.content[i + r] = tmp
@@ -317,7 +317,7 @@ export class Terminal {
     /** 取得渲染成HTML的單行資料 */
     public static GetRenderStringLine(line: Block[]): string {
         let str: string = ""
-        str += "<span class=\"line\">"
+        str += '<span class="line">'
         let fg: number = line[0].Foreground
         let bg: number = line[0].Background
         let attr: Attribute = line[0].Attribute
@@ -328,17 +328,30 @@ export class Terminal {
         for (let j = 0; j < TerminalWidth; j++) {
             const b = line[j]
             if (isWChar) {
-                if ((cache.Foreground !== b.Foreground) || (cache.Background !== b.Background) || (cache.Attribute !== b.Attribute)) {
+                if (
+                    cache.Foreground !== b.Foreground ||
+                    cache.Background !== b.Background ||
+                    cache.Attribute !== b.Attribute
+                ) {
                     if (data.length > 0) {
                         str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
                         groupWidth = 0
                     }
-                    str += this.getHalfColorContent(cache.Content, b.Content, cache.Foreground, cache.Background, cache.Attribute, b.Foreground, b.Background, b.Attribute)
+                    str += this.getHalfColorContent(
+                        cache.Content,
+                        b.Content,
+                        cache.Foreground,
+                        cache.Background,
+                        cache.Attribute,
+                        b.Foreground,
+                        b.Background,
+                        b.Attribute,
+                    )
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
-                } else if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
+                } else if (fg !== b.Foreground || bg !== b.Background || attr !== b.Attribute) {
                     if (data.length > 0) {
                         str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
@@ -363,13 +376,11 @@ export class Terminal {
                 }
 
                 isWChar = false
-            } else if (b.Content >= 0x7F) {
+            } else if (b.Content >= 0x7f) {
                 cache = b
                 isWChar = true
             } else {
-
-                if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
-
+                if (fg !== b.Foreground || bg !== b.Background || attr !== b.Attribute) {
                     if (data.length > 0) {
                         str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
@@ -395,10 +406,19 @@ export class Terminal {
         return str
     }
 
-    private static getGroup(data: byte[], foreground: number, background: number, attr: Attribute, groupWidth: number): string {
+    private static getGroup(
+        data: byte[],
+        foreground: number,
+        background: number,
+        attr: Attribute,
+        groupWidth: number,
+    ): string {
         const bytes = Uint8Array.from(data)
-        const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
-        const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
+        const fg =
+            attr & Attribute.Bold
+                ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+                : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+        const bg = `b${attr & Attribute.Reverse ? 87 - background : background}`
         const s = Big5UAO.GetString(bytes)
         // let width = 0
         // for (let k = 0; k < s.length; k++) {
@@ -409,19 +429,32 @@ export class Terminal {
         //     }
         // }
 
-        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${groupWidth}em\">` + Terminal.convertHTML(s) + "</span>"
+        return (
+            `<span class="keepSpace ${fg} ${bg}" style=\"width: ${groupWidth}em\">` +
+            Terminal.convertHTML(s) +
+            "</span>"
+        )
     }
 
-    private static getHalfColorContent(ldata: byte, rdata: byte, lfg: number, lbg: number, lattr: Attribute, rfg: number, rbg: number, rattr: Attribute): string {
+    private static getHalfColorContent(
+        ldata: byte,
+        rdata: byte,
+        lfg: number,
+        lbg: number,
+        lattr: Attribute,
+        rfg: number,
+        rbg: number,
+        rattr: Attribute,
+    ): string {
         const bytes = Uint8Array.from([ldata, rdata])
         let lfgcolor = lattr & Attribute.Bold ? "b" : ""
         let rfgcolor = rattr & Attribute.Bold ? "b" : ""
 
-        lfgcolor += lattr & Attribute.Reverse ? `f${(67 - lfg)}` : `f${lfg}`
-        rfgcolor += rattr & Attribute.Reverse ? `f${(67 - rfg)}` : `f${rfg}`
+        lfgcolor += lattr & Attribute.Reverse ? `f${67 - lfg}` : `f${lfg}`
+        rfgcolor += rattr & Attribute.Reverse ? `f${67 - rfg}` : `f${rfg}`
 
-        const lbgcolor = `b${lattr & Attribute.Reverse ? (87 - lbg) : lbg}`
-        const rbgcolor = `b${rattr & Attribute.Reverse ? (87 - rbg) : rbg}`
+        const lbgcolor = `b${lattr & Attribute.Reverse ? 87 - lbg : lbg}`
+        const rbgcolor = `b${rattr & Attribute.Reverse ? 87 - rbg : rbg}`
 
         const s = Big5UAO.GetString(bytes)
         const style = `style="width: 1em;"`
@@ -429,10 +462,19 @@ export class Terminal {
         return `<span class="halfTextContainer"><span ${style} class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${text}">${text}</span></span>`
     }
 
-    private static getFullWidthContent(ldata: byte, rdata: byte, foreground: number, background: number, attr: Attribute): string {
+    private static getFullWidthContent(
+        ldata: byte,
+        rdata: byte,
+        foreground: number,
+        background: number,
+        attr: Attribute,
+    ): string {
         const bytes = Uint8Array.from([ldata, rdata])
-        const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
-        const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
+        const fg =
+            attr & Attribute.Bold
+                ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+                : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+        const bg = `b${attr & Attribute.Reverse ? 87 - background : background}`
         const s = Big5UAO.GetString(bytes)
         const text = Terminal.convertHTML(s)
         return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${1}em\">${text}</span>`
@@ -440,7 +482,7 @@ export class Terminal {
 
     private static convertHTML(s: string): string {
         s = s.replace("&", "&amp;")
-        s = s.replace("\"", "&quot;")
+        s = s.replace('"', "&quot;")
         s = s.replace("<", "&lt;")
         s = s.replace(">", "&gt;")
         s = s.replace("®", "&reg;")
@@ -450,33 +492,33 @@ export class Terminal {
     }
 
     private static GetBytesWriteColor(s: string, color: Color): byte[] {
-        const b = [0x03, 0x1B, 0x5B, 0x44]
+        const b = [0x03, 0x1b, 0x5b, 0x44]
         if ("attribute" in color) {
             if (color.attribute & Attribute.Bold) {
-                b.push(0x31, 0x3B)
+                b.push(0x31, 0x3b)
             }
             if (color.attribute & Attribute.Underline) {
-                b.push(0x34, 0x3B)
+                b.push(0x34, 0x3b)
             }
             if (color.attribute & Attribute.Blink) {
-                b.push(0x35, 0x3B)
+                b.push(0x35, 0x3b)
             }
             if (color.attribute & Attribute.Reverse) {
-                b.push(0x37, 0x3B)
+                b.push(0x37, 0x3b)
             }
             if (color.attribute & Attribute.Invisible) {
-                b.push(0x38, 0x3B)
+                b.push(0x38, 0x3b)
             }
         }
         if ("color" in color) {
             const n = color.color
-            b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
+            b.push(n / 10 + 0x30, (n % 10) + 0x30, 0x3b)
         }
         if ("background" in color) {
             const n = color.background
-            b.push(n / 10 + 0x30, n % 10 + 0x30, 0x3B)
+            b.push(n / 10 + 0x30, (n % 10) + 0x30, 0x3b)
         }
-        b.push(0x1B, 0x5B, 0x43)
+        b.push(0x1b, 0x5b, 0x43)
         b.push(...Big5UAO.GetBytes(s))
         b.push(0x03)
         return b
@@ -510,13 +552,12 @@ export class Terminal {
                         const a = start + 1
                         const b = seg.length - a - 3
                         data.push(...Terminal.GetBytesWriteColor(seg.substr(a, b), color))
-
                     } else {
                         data.push(...Big5UAO.GetBytes(seg))
                     }
                 }
             }
-            data.push(0x0D)
+            data.push(0x0d)
         }
         return new Uint8Array(data)
     }

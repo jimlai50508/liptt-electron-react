@@ -24,12 +24,10 @@ const columns: Array<ColumnProps<FavoriteItemInfo>> = [
     },
 ]
 
-interface ComponentProps {
-
-}
+interface ComponentProps {}
 
 interface ComponentState {
-    loading: boolean,
+    loading: boolean
     data: FavoriteItemInfo[]
 }
 
@@ -43,7 +41,7 @@ interface FavoriteItemInfo {
 
 interface ResponseData {
     me: {
-        favor: FavoriteItemInfo[],
+        favor: FavoriteItemInfo[]
     }
 }
 
@@ -53,7 +51,6 @@ interface Response {
 }
 
 export class Favorite extends Component<ComponentProps, ComponentState> {
-
     constructor(prop: ComponentProps) {
         super(prop)
         this.state = {
@@ -81,18 +78,14 @@ export class Favorite extends Component<ComponentProps, ComponentState> {
             }
         }
         `
-        PromiseIpcRenderer.send<Response>(ApiRoute.GraphQL, gql)
-        .then((res) => {
-            this.setState((prev, _) => ({...prev, data: res.data.me.favor, loading: false}))
+        PromiseIpcRenderer.send<Response>(ApiRoute.GraphQL, gql).then(res => {
+            this.setState((prev, _) => ({ ...prev, data: res.data.me.favor, loading: false }))
         })
     }
 
-    public componentWillUnmount() {
-    }
+    public componentWillUnmount() {}
 
     public render() {
-        return (
-            <Table {...this.state} columns={columns} dataSource={this.state.data}/>
-        )
+        return <Table {...this.state} columns={columns} dataSource={this.state.data} />
     }
 }

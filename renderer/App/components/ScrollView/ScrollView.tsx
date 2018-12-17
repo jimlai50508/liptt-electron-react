@@ -47,13 +47,13 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
 
     private onMouseUp = (e: MouseEvent<HTMLDivElement>) => {
         if (this.props.autoHideThumb) {
-            this.hHide = window.setTimeout((() => {
+            this.hHide = window.setTimeout(() => {
                 if (this.hHide) {
                     this.setState((prev, _) => {
-                        return {...prev, thumbHide: true}
+                        return { ...prev, thumbHide: true }
                     })
                 }
-            }), this.hideDuration)
+            }, this.hideDuration)
         }
         this.prevMouse = null
     }
@@ -62,11 +62,13 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         if (this.prevMouse) {
             const dy = e.clientY - this.prevMouse.y
             this.prevMouse = { x: e.clientX, y: e.clientY }
-            const ratio = (this.RefScrollConent.scrollHeight - this.RefScrollView.clientHeight) / (this.RefScrollView.clientHeight - this.RefThumb.clientHeight)
+            const ratio =
+                (this.RefScrollConent.scrollHeight - this.RefScrollView.clientHeight) /
+                (this.RefScrollView.clientHeight - this.RefThumb.clientHeight)
             const top = this.RefScrollConent.scrollTop
             const ch = this.RefScrollConent.scrollHeight
             const vh = this.RefScrollView.clientHeight
-            this.RefScrollConent.scrollTop = (top + vh + dy * ratio) < ch ? top + dy * ratio : ch - vh
+            this.RefScrollConent.scrollTop = top + vh + dy * ratio < ch ? top + dy * ratio : ch - vh
         }
     }
 
@@ -81,13 +83,13 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         if (this.props.autoHideThumb && this.prevMouse === null) {
             window.clearTimeout(this.hHide)
             this.hHide = null
-            this.hHide = window.setTimeout((() => {
+            this.hHide = window.setTimeout(() => {
                 if (this.hHide) {
                     this.setState((prev, _) => {
-                        return {...prev, thumbHide: true}
+                        return { ...prev, thumbHide: true }
                     })
                 }
-            }), 1500)
+            }, 1500)
         }
 
         this.renderThumb()
@@ -105,13 +107,17 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
             // const str = (this.thumbTop * 100).toPrecision(4) + "%"
             const dy = (vh - th) * (top / total)
             this.setState((prev, props) => {
-                return {...prev, thumbHide: false, thumbStyle: {transform: `translateY(${dy}px)`, height: props.thumbHeight}}
+                return {
+                    ...prev,
+                    thumbHide: false,
+                    thumbStyle: { transform: `translateY(${dy}px)`, height: props.thumbHeight },
+                }
             })
         }
     }
 
     private testNeedMore(): boolean {
-        if ((Date.now() - this.prevTime) < this.lazyDuration) {
+        if (Date.now() - this.prevTime < this.lazyDuration) {
             return false
         }
         this.prevTime = Date.now()
@@ -122,7 +128,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         } else {
             const top = this.RefScrollConent.scrollTop
             const ih = this.props.itemHeight
-            return (top + vh + 3 * ih) > this.RefScrollConent.scrollHeight
+            return top + vh + 3 * ih > this.RefScrollConent.scrollHeight
         }
     }
 
@@ -187,18 +193,30 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     }
 
     private renderContent(): JSX.Element[] {
-
         if (this.items.length === 0) {
             if (!this.end) {
-                return [(
+                return [
                     <div key={0} style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
-                        <Spin tip="載入中..." style={{position: "absolute", width: "100%", top: "50%"}} />
-                    </div>)]
+                        <Spin tip="載入中..." style={{ position: "absolute", width: "100%", top: "50%" }} />
+                    </div>,
+                ]
             } else {
-                return [(
+                return [
                     <div key={0} style={{ position: "absolute", width: "100%", height: "100%", background: "#000000" }}>
-                        <span style={{position: "absolute", width: "100%", top: "50%", display: "flex", justifyContent: "center", color: "#FFFFFF" }}>空空如也</span>
-                    </div>)]
+                        <span
+                            style={{
+                                position: "absolute",
+                                width: "100%",
+                                top: "50%",
+                                display: "flex",
+                                justifyContent: "center",
+                                color: "#FFFFFF",
+                            }}
+                        >
+                            空空如也
+                        </span>
+                    </div>,
+                ]
             }
         }
 
@@ -206,7 +224,7 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         const vh = this.RefScrollView.clientHeight
         const ih = this.props.itemHeight
         const ch = ih * this.items.length
-        top = (top + vh) > ch ? ch - vh : top
+        top = top + vh > ch ? ch - vh : top
         const i = Math.floor(top / ih)
         const j = Math.ceil((top + vh) / ih) + 1
         const contents = this.items.slice(i, j)
@@ -214,18 +232,23 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
         const result: JSX.Element[] = []
 
         if (i > 0) {
-            result.push(<div style={{width: "100%", height: i * ih + "px"}} key={Number.MAX_SAFE_INTEGER}/>)
+            result.push(<div style={{ width: "100%", height: i * ih + "px" }} key={Number.MAX_SAFE_INTEGER} />)
         }
 
         result.push(...contents)
 
         const k = this.items.length - j + 1
         if (k !== 0) {
-            result.push(<div style={{width: "100%", height: k * ih + "px", background: "#000000"}} key={0} />)
+            result.push(<div style={{ width: "100%", height: k * ih + "px", background: "#000000" }} key={0} />)
         }
 
         if (!this.end) {
-            result.push(<Spin key={Number.MIN_SAFE_INTEGER} style={{width: "100%", height: ih + "px", background: "#000000"}} />)
+            result.push(
+                <Spin
+                    key={Number.MIN_SAFE_INTEGER}
+                    style={{ width: "100%", height: ih + "px", background: "#000000" }}
+                />,
+            )
         }
 
         return result
@@ -234,23 +257,19 @@ export class ScrollView extends Component<ComponentProps, ComponentState> {
     public render() {
         return (
             <div
-                ref={e => this.RefScrollView = e}
+                ref={e => (this.RefScrollView = e)}
                 className={style.scrollView + (this.props.className ? " " + this.props.className : "")}
                 style={this.props.style}
             >
                 <div className={style.track}>
                     <div
-                        ref={e => this.RefThumb = e}
+                        ref={e => (this.RefThumb = e)}
                         className={style.thumb + (this.state.thumbHide ? " " + style.hide : "")}
                         style={this.state.thumbStyle}
                         onMouseDown={this.onMouseDown}
                     />
                 </div>
-                <div
-                    ref={e => this.RefScrollConent = e}
-                    className={style.content}
-                    onScroll={this.onScroll}
-                >
+                <div ref={e => (this.RefScrollConent = e)} className={style.content} onScroll={this.onScroll}>
                     {this.renderContent()}
                 </div>
             </div>

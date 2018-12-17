@@ -43,7 +43,6 @@ import {
 import { makeExecutableSchema, IResolverObject, IResolvers } from "graphql-tools"
 
 export class App {
-
     private mainWindow: BrowserWindow
     private windowOptions: BrowserWindowConstructorOptions
     private readonly iconSrc = path.join(__dirname, "../../../resources/icons/256x256.png")
@@ -80,9 +79,7 @@ export class App {
 
         this.client = new LiPTT()
 
-        app.on("ready", async () => {
-
-        })
+        app.on("ready", async () => {})
 
         app.setName(appName)
         app.on("ready", () => {
@@ -102,16 +99,15 @@ export class App {
     }
 
     private onReady() {
-
         if (isDevMode()) {
             // 安裝 react 開發者工具
             installExtension(REACT_DEVELOPER_TOOLS, true)
-            .then((name: string) => {
-                // console.warn(`Added Extension:  ${name}`)
-            })
-            .catch((err: any) => {
-                console.error("REACT_DEVELOPER_TOOLS ", err)
-            })
+                .then((name: string) => {
+                    // console.warn(`Added Extension:  ${name}`)
+                })
+                .catch((err: any) => {
+                    console.error("REACT_DEVELOPER_TOOLS ", err)
+                })
         }
 
         globalShortcut.register("Escape", () => {
@@ -145,7 +141,8 @@ export class App {
 
         const menuTemplate: MenuItemConstructorOptions[] = [
             {
-                label: "File", submenu: [
+                label: "File",
+                submenu: [
                     {
                         label: "File",
                         click: () => {
@@ -242,7 +239,7 @@ export class App {
         })
 
         RendererConsole.window = this.mainWindow
-        this.mainWindow.on("close", (event) => {
+        this.mainWindow.on("close", event => {
             if (!this.forceQuit) {
                 event.preventDefault()
                 this.forceQuit = true
@@ -364,7 +361,7 @@ export class App {
             const g = new Google()
             try {
                 const lines: string[] = []
-                this.client.curArticleContent.map((arr) => {
+                this.client.curArticleContent.map(arr => {
                     lines.push(Terminal.GetRenderStringLine(arr))
                 })
                 const title = this.client.curArticle.title ? this.client.curArticle.title : this.client.curArticle.url
@@ -383,74 +380,78 @@ export class App {
             this.mainWindow.webContents.send(ApiRoute.socketEvent, state)
         })
 
-        fs.readFile(path.resolve(__dirname, "../../../resources/graphql/liptt.gql"), {encoding: "utf-8"}, (err, data) => {
-            if (err) {
-                console.error(err)
-                return
-            }
-            const typeDefs = data
-            const resolvers: IResolvers = {
-                Query: {
-                    me: () => {
-                        return {
-                            username: () => this.client.username,
-                            password: () => "",
-                            favor: async () => {
-                                const result = await this.getFavoriteList(this.client)
-                                return result.map(v => {
-                                    let type = ""
-                                    switch (v.type) {
-                                        case FavoriteItemType.Board:
-                                        type = "Board"
-                                        break
-                                    case FavoriteItemType.Folder:
-                                        type = "Folder"
-                                        break
-                                    case FavoriteItemType.Horizontal:
-                                        type = "Horizontal"
-                                        break
-                                    }
-                                    return {
-                                        key: v.key,
-                                        type,
-                                        name: v.name,
-                                        description: v.description,
-                                        popularity: v.popularity,
-                                    }
-                                })
-                            },
-                        }
+        fs.readFile(
+            path.resolve(__dirname, "../../../resources/graphql/liptt.gql"),
+            { encoding: "utf-8" },
+            (err, data) => {
+                if (err) {
+                    console.error(err)
+                    return
+                }
+                const typeDefs = data
+                const resolvers: IResolvers = {
+                    Query: {
+                        me: () => {
+                            return {
+                                username: () => this.client.username,
+                                password: () => "",
+                                favor: async () => {
+                                    const result = await this.getFavoriteList(this.client)
+                                    return result.map(v => {
+                                        let type = ""
+                                        switch (v.type) {
+                                            case FavoriteItemType.Board:
+                                                type = "Board"
+                                                break
+                                            case FavoriteItemType.Folder:
+                                                type = "Folder"
+                                                break
+                                            case FavoriteItemType.Horizontal:
+                                                type = "Horizontal"
+                                                break
+                                        }
+                                        return {
+                                            key: v.key,
+                                            type,
+                                            name: v.name,
+                                            description: v.description,
+                                            popularity: v.popularity,
+                                        }
+                                    })
+                                },
+                            }
+                        },
                     },
-                },
-                Mutation: {
-                    login: async (root: any, args: any, context: any, info: any) => {
-                        const { user } = args
-                        const s = await this.login(user)
+                    Mutation: {
+                        login: async (root: any, args: any, context: any, info: any) => {
+                            const { user } = args
+                            const s = await this.login(user)
 
-                        switch (s) {
-                            case PTTState.MainPage:
-                            return "Ok"
-                            case PTTState.WrongPassword:
-                            return "WrongPassword"
-                            case PTTState.Overloading:
-                            return "Overloading"
-                            case PTTState.HeavyLogin:
-                            return "HeavyLogin"
-                            case PTTState.WebSocketFailed:
-                            return "WebSocketFailed"
-                            default:
-                            return "WhereAmI"
-                        }
+                            switch (s) {
+                                case PTTState.MainPage:
+                                    return "Ok"
+                                case PTTState.WrongPassword:
+                                    return "WrongPassword"
+                                case PTTState.Overloading:
+                                    return "Overloading"
+                                case PTTState.HeavyLogin:
+                                    return "HeavyLogin"
+                                case PTTState.WebSocketFailed:
+                                    return "WebSocketFailed"
+                                default:
+                                    return "WhereAmI"
+                            }
+                        },
+                        logout: async () => {
+                            await this.logout()
+                            return "ok"
+                        },
                     },
-                    logout: async () => {
-                        await this.logout()
-                        return "ok"
-                    },
-                },
-            }
+                }
 
-            this.schema = makeExecutableSchema({typeDefs, resolvers})
-        })
+                this.schema = makeExecutableSchema({ typeDefs, resolvers })
+            },
+        )
 
         ipcMain.on(ApiRoute.GraphQL, async (_: EventEmitter, gqlquery: string, inputObject: any) => {
             try {

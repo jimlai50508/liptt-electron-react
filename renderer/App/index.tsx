@@ -8,15 +8,13 @@ import { AppStore } from "components/AppStore"
 import MobXDevTools from "mobx-react-devtools"
 import Controller from "components/Controller"
 
-interface ComponentProps {
-}
+interface ComponentProps {}
 
 interface ComponentState {
     isDevMode: boolean
 }
 
 export default class extends Component<ComponentProps, ComponentState> {
-
     private appStore: AppStore
 
     constructor(props: ComponentProps) {
@@ -26,27 +24,27 @@ export default class extends Component<ComponentProps, ComponentState> {
     }
 
     public componentDidMount() {
-        PromiseIpcRenderer.send<boolean>("/is-dev-mode").then(mode => this.setState({isDevMode: mode}))
+        PromiseIpcRenderer.send<boolean>("/is-dev-mode").then(mode => this.setState({ isDevMode: mode }))
     }
 
     public render() {
         return (
-        <Provider {...this.appStore}>
-            <div>
-                <Controller />
-                {this.state.isDevMode ? <MobXDevTools /> : null}
-                <HashRouter>
-                    <Switch>
-                        <Route exact path="/">
-                            <LoginPage />
-                        </Route>
-                        <Route path="/Main">
-                            <MainPage />
-                        </Route>
-                    </Switch>
-                </HashRouter>
-            </div>
-        </Provider>
+            <Provider {...this.appStore}>
+                <div>
+                    <Controller />
+                    {this.state.isDevMode ? <MobXDevTools /> : null}
+                    <HashRouter>
+                        <Switch>
+                            <Route exact path="/">
+                                <LoginPage />
+                            </Route>
+                            <Route path="/Main">
+                                <MainPage />
+                            </Route>
+                        </Switch>
+                    </HashRouter>
+                </div>
+            </Provider>
         )
     }
 }

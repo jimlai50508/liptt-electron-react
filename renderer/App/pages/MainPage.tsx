@@ -19,9 +19,7 @@ import { reaction, when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
 import { ISocket } from "components/AppStore"
 
-interface ComponentProps extends ISocket {
-
-}
+interface ComponentProps extends ISocket {}
 
 interface ComponentState {
     logout: boolean
@@ -32,18 +30,17 @@ interface ComponentState {
 @inject("socket")
 @observer
 export class MainPage extends Component<ComponentProps, ComponentState> {
-
     private reactionDisposer: IReactionDisposer
     private isLogout: boolean
 
     private onCollapse = (collapsed: boolean) => {
-        this.setState({...this.state, collapsed})
+        this.setState({ ...this.state, collapsed })
     }
 
     private onMenuClick = (param: ClickParam) => {
         if (param.key !== this.state.activeMenu) {
             setTimeout(() => {
-                this.setState((prev, _) => ({...prev, activeMenu: param.key}))
+                this.setState((prev, _) => ({ ...prev, activeMenu: param.key }))
             }, 16)
         }
     }
@@ -51,9 +48,8 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
     private onLogout = (e: MouseEvent<HTMLElement>) => {
         const gql = `mutation { logout }`
         this.isLogout = false
-        PromiseIpcRenderer.send(ApiRoute.GraphQL, gql)
-        .then(result => {
-            this.setState((prev, _) => ({...prev, logout: true}))
+        PromiseIpcRenderer.send(ApiRoute.GraphQL, gql).then(result => {
+            this.setState((prev, _) => ({ ...prev, logout: true }))
         })
         // PromiseIpcRenderer.send(ApiRoute.logout)
         // this.setState((prev, _) => ({...prev, logout: true}))
@@ -74,7 +70,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             case "Hot":
                 return <Hot />
             case "Favorite":
-                return <Favorite/>
+                return <Favorite />
             case "Test":
                 return <Test />
             case "Mail":
@@ -86,26 +82,26 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
             case "CSS":
                 return <CSSPage />
             default:
-            return <Hot />
+                return <Hot />
         }
     }
 
     public componentDidMount() {
-
         this.reactionDisposer = reaction(
             () => this.props.socket.socketState,
-            (state) => {
+            state => {
                 if (state === SocketState.Closed) {
                     if (this.isLogout) {
-                        notification.config({placement: "bottomRight"})
+                        notification.config({ placement: "bottomRight" })
                         notification.error({
                             message: "liptt 通知",
                             description: "連線已斷開",
                         })
-                        this.setState((prev, _) => ({...prev, logout: true}))
+                        this.setState((prev, _) => ({ ...prev, logout: true }))
                     }
                 }
-            })
+            },
+        )
         // this.reactionDisposer = when(
         //     () => this.props.socket.socketState === SocketState.Closed,
         //     () => {
@@ -123,7 +119,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
         setImmediate(async () => {
             const hasEmail = await PromiseIpcRenderer.send<boolean>(ApiRoute.checkMail)
             if (hasEmail) {
-                notification.config({placement: "bottomRight"})
+                notification.config({ placement: "bottomRight" })
                 window.setTimeout(() => {
                     notification.open({
                         message: "liptt 通知",
@@ -158,11 +154,11 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                             <Icon type="star" />
                             <span>我的最愛</span>
                         </Menu.Item>
-                        <Menu.Item key="Mail" >
+                        <Menu.Item key="Mail">
                             <Icon type="mail" />
                             <span>郵件信箱</span>
                         </Menu.Item>
-                        <Menu.Item key="Test" >
+                        <Menu.Item key="Test">
                             <Icon type="profile" />
                             <span>測試頁</span>
                         </Menu.Item>
@@ -180,7 +176,12 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                         </Menu.Item>
                         <Menu.SubMenu
                             key="sub1"
-                            title={<span><Icon type="user" /><span>User</span></span>}
+                            title={
+                                <span>
+                                    <Icon type="user" />
+                                    <span>User</span>
+                                </span>
+                            }
                         >
                             <Menu.Item key="3">Tom</Menu.Item>
                             <Menu.Item key="4">Bill</Menu.Item>
@@ -192,13 +193,13 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
                     <Layout.Header>
                         <Row type="flex" justify="end" align="middle">
                             <Col span={4}>
-                                <Button onClick={this.onLogout}><Icon type="logout"/></Button>
+                                <Button onClick={this.onLogout}>
+                                    <Icon type="logout" />
+                                </Button>
                             </Col>
                         </Row>
                     </Layout.Header>
-                    <Layout.Content className={style.container}>
-                        {this.renderContent()}
-                    </Layout.Content>
+                    <Layout.Content className={style.container}>{this.renderContent()}</Layout.Content>
                     {/* <Layout.Footer className={style.footer}>
                         Created by lightyen <span>React:{React.version} Ant-design:{antdVersion}</span>
                     </Layout.Footer> */}

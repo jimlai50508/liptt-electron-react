@@ -107,41 +107,41 @@ export enum Attribute {
 /** 文字顏色控制碼 */
 export enum ForeColor {
     /** 黑 */
-    Black     = 30,
+    Black = 30,
     /** 紅 */
-    Red       = 31,
+    Red = 31,
     /** 綠 */
-    Green     = 32,
+    Green = 32,
     /** 黃 */
-    Yellow    = 33,
+    Yellow = 33,
     /** 藍 */
-    Blue      = 34,
+    Blue = 34,
     /** 紫 */
-    Purple    = 35,
+    Purple = 35,
     /** 靛 */
-    Cyan      = 36,
+    Cyan = 36,
     /** 白 */
-    White     = 37,
+    White = 37,
 }
 
 /** 背景顏色控制碼 */
 export enum BackColor {
     /** 黑 */
-    Black     = 40,
+    Black = 40,
     /** 紅 */
-    Red       = 41,
+    Red = 41,
     /** 綠 */
-    Green     = 42,
+    Green = 42,
     /** 黃 */
-    Yellow    = 43,
+    Yellow = 43,
     /** 藍 */
-    Blue      = 44,
+    Blue = 44,
     /** 紫 */
-    Purple    = 45,
+    Purple = 45,
     /** 靛 */
-    Cyan      = 46,
+    Cyan = 46,
     /** 白 */
-    White     = 47,
+    White = 47,
     /** 亮紅 */
-    HighRed   = 48,
+    HighRed = 48,
 }

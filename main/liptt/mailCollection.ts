@@ -3,7 +3,6 @@ import { MailAbstract } from "../model"
 //   編號   日 期 作 者          信  件  標  題                  (容量:201/200篇)
 
 export class MailCache {
-
     public maxSize: number
     private _size: number
     private minIndex: number
@@ -61,7 +60,7 @@ export class MailCache {
         }
         for (let item = iterator.next(); item.value && n > 0; item = iterator.next()) {
             const a = item.value[1]
-            result.push({...a})
+            result.push({ ...a })
             n = n - 1
         }
 

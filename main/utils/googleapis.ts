@@ -38,7 +38,6 @@ const APP_CREDENTIALS_PATH = path.resolve(__dirname, "../../../resources/credent
 
 /** https://github.com/googleapis/google-api-nodejs-client#getting-started */
 export class Google {
-
     /// https://myaccount.google.com/permissions 第三方應用程式權限
     /// https://developers.google.com/+/web/api/rest/latest/people/get
     /// https://developers.google.com/+/web/api/rest/latest/people#emails
@@ -77,7 +76,7 @@ export class Google {
         const plus = new plus_v1.Plus({ auth: client })
 
         try {
-            const resp = await plus.people.get({userId: "me"})
+            const resp = await plus.people.get({ userId: "me" })
             const user: UserProfile = {
                 name: resp.data.displayName,
                 emails: resp.data.emails,
@@ -94,7 +93,13 @@ export class Google {
      * @param subject 標題
      * @param content 內容
      */
-    public async SendMailArticleTo(mailto: string, alias: string, subject: string, title: string, htmls: string): Promise<void> {
+    public async SendMailArticleTo(
+        mailto: string,
+        alias: string,
+        subject: string,
+        title: string,
+        htmls: string,
+    ): Promise<void> {
         try {
             const client = await this.getOAuth2Client()
             await this.sendMail(client, mailto, alias, subject, title, htmls)
@@ -143,26 +148,37 @@ export class Google {
         </html>`
     }
 
-    private async sendMail(client: OAuth2Client, mailto: string, alias: string, subject: string, title: string, htmlContent: string): Promise<void> {
-        const gmail = new gmail_v1.Gmail({auth: client})
+    private async sendMail(
+        client: OAuth2Client,
+        mailto: string,
+        alias: string,
+        subject: string,
+        title: string,
+        htmlContent: string,
+    ): Promise<void> {
+        const gmail = new gmail_v1.Gmail({ auth: client })
         const raw =
-        `To: ${libmime.encodeWord(alias, "Q")} <${mailto}>\r\n` +
-        `Subject: ${libmime.encodeWord(subject, "Q")}\r\n` +
-        `MIME-Version: 1.0\r\n` +
-        libmime.foldLines("Content-Type: multipart/mixed; boundary=\"======THIS_IS_BOUNDARY======\"") + "\r\n" +
-        "Content-Description: multipart-1\r\n" +
-        "\r\n" +
-        "--======THIS_IS_BOUNDARY======\r\n" +
-        `Content-Type: text/html\r\n` +
-        `Content-Description: content\r\n` +
-        "\r\n" + htmlContent + "\r\n" +
-        "--======THIS_IS_BOUNDARY======\r\n" +
-        `Content-Type: application/octet-stream\r\n` +
-        `Content-Disposition: attachment; filename=\"${title}.html\"\r\n` +
-        `Content-Description: article\r\n` +
-        "\r\n" +
-        htmlContent + "\r\n" +
-        "--======THIS_IS_BOUNDARY======--\r\n"
+            `To: ${libmime.encodeWord(alias, "Q")} <${mailto}>\r\n` +
+            `Subject: ${libmime.encodeWord(subject, "Q")}\r\n` +
+            `MIME-Version: 1.0\r\n` +
+            libmime.foldLines('Content-Type: multipart/mixed; boundary="======THIS_IS_BOUNDARY======"') +
+            "\r\n" +
+            "Content-Description: multipart-1\r\n" +
+            "\r\n" +
+            "--======THIS_IS_BOUNDARY======\r\n" +
+            `Content-Type: text/html\r\n` +
+            `Content-Description: content\r\n` +
+            "\r\n" +
+            htmlContent +
+            "\r\n" +
+            "--======THIS_IS_BOUNDARY======\r\n" +
+            `Content-Type: application/octet-stream\r\n` +
+            `Content-Disposition: attachment; filename=\"${title}.html\"\r\n` +
+            `Content-Description: article\r\n` +
+            "\r\n" +
+            htmlContent +
+            "\r\n" +
+            "--======THIS_IS_BOUNDARY======--\r\n"
 
         try {
             const resp = await gmail.users.messages.send({
@@ -183,11 +199,13 @@ export class Google {
         try {
             const img = await readFile(filename)
             const raw =
-            `Content-Type: image/png\r\n` +
-            "Content-Transfer-Encoding: base64\r\n" +
-            `Content-Disposition: attachment; filename=\"${path.basename(filename)}\"\r\n` +
-            `Content-Description: image\r\n` +
-            "\r\n" + img.toString("base64") + "\r\n"
+                `Content-Type: image/png\r\n` +
+                "Content-Transfer-Encoding: base64\r\n" +
+                `Content-Disposition: attachment; filename=\"${path.basename(filename)}\"\r\n` +
+                `Content-Description: image\r\n` +
+                "\r\n" +
+                img.toString("base64") +
+                "\r\n"
             return raw
         } catch (err) {
             throw new Error(err)
@@ -212,7 +230,6 @@ export class Google {
     }
 
     private async getAuth(credentials: ICredentials): Promise<OAuth2Client> {
-
         if (!credentials.redirect_uris) {
             throw new Error("Redirect Uris must be set.")
         }
@@ -220,7 +237,8 @@ export class Google {
         const oAuth2Client = new OAuth2Client(
             credentials.client_id,
             credentials.client_secret,
-            credentials.redirect_uris[0])
+            credentials.redirect_uris[0],
+        )
 
         const authUrl = oAuth2Client.generateAuthUrl({
             access_type: "offline",
@@ -250,28 +268,29 @@ export class Google {
         return new Promise<OAuth2Client>((rs, rj) => {
             const oldTokens = JSON.parse(this.store.get("tokens")) as Credentials
 
-            oAuth2Client.on("tokens", ((tokens: Credentials) => {
-                tokens.refresh_token = oldTokens.refresh_token
-                this.store.set("tokens", JSON.stringify(tokens))
-                oAuth2Client.setCredentials(tokens)
-                rs(oAuth2Client)
-            }).bind(this))
+            oAuth2Client.on(
+                "tokens",
+                ((tokens: Credentials) => {
+                    tokens.refresh_token = oldTokens.refresh_token
+                    this.store.set("tokens", JSON.stringify(tokens))
+                    oAuth2Client.setCredentials(tokens)
+                    rs(oAuth2Client)
+                }).bind(this),
+            )
 
             oAuth2Client.setCredentials({ refresh_token: oldTokens.refresh_token })
             // refresh the access_token
-            oAuth2Client.getRequestHeaders(authUrl)
-            .then(headers => {
-            })
-            .catch(e => {
-                rj(e)
-            })
+            oAuth2Client
+                .getRequestHeaders(authUrl)
+                .then(headers => {})
+                .catch(e => {
+                    rj(e)
+                })
         })
     }
 
     private async openAuthWindow(authUrl: string, oAuth2Client: OAuth2Client): Promise<string> {
-
         return new Promise<string>((rs, rj) => {
-
             const win = new BrowserWindow({
                 width: 600,
                 height: 720,
