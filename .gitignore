@@ -1,5 +1,5 @@
 node_modules
-renderer/App/**/*.d.ts
+renderer/App/**/*.scss.d.ts
 .webpack/*.js
 dist
 release

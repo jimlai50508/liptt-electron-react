@@ -1,2 +1,2 @@
-export const loginpage: string;
-export const input: string;
+export const loginpage: string
+export const input: string

@@ -1,1 +1,1 @@
-export const but: string;
+export const but: string
