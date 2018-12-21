@@ -30,7 +30,7 @@
         },
         {
             "label": "建置(electron production)",
-            "group": "build",
+            "group": "none",
             "type": "shell",
             "command": "node_modules/.bin/tsc",
             "windows": {

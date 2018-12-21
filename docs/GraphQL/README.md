@@ -28,6 +28,6 @@ type Article {
 
 ## ref
 
-[GraphQL](https://graphql.org/learn/)  
-[How To GraphQL](https://www.howtographql.com/)  
+[GraphQL](https://graphql.org/learn/)
+[How To GraphQL](https://www.howtographql.com/)
 https://wehavefaces.net/graphql-shorthand-notation-cheatsheet-17cd715861b6

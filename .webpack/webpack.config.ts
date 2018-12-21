@@ -81,12 +81,15 @@ const conf: Configuration = {
             },
             {
                 test: /\.css$/,
-                use: [MiniCssExtractPlugin.loader, { loader: "css-loader" }],
+                use: [
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
+                    { loader: "css-loader" },
+                ],
             },
             {
                 test: /\.less$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
                     { loader: "css-loader" },
                     // { loader: "typings-for-css-modules-loader",
                     //   options: {
@@ -113,7 +116,7 @@ const conf: Configuration = {
             {
                 test: /\.s(a|c)ss$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
                     {
                         loader: "typings-for-css-modules-loader",
                         options: {
@@ -121,7 +124,7 @@ const conf: Configuration = {
                             namedExport: true,
                             camelCase: true,
                             minimize: true,
-                            localIdentName: "[local]-[hash]",
+                            localIdentName: "[local]-[hash:base64:6]",
                         },
                     },
                     { loader: "sass-loader" },
@@ -149,10 +152,6 @@ const conf: Configuration = {
             filename: "[name].[hash].css",
             chunkFilename: "[id].[hash].css",
         }),
-        // new DllReferencePlugin({
-        //     context: vendor,
-        //     manifest: require(path.resolve(__dirname, "../manifest.json")),
-        // }),
     ].concat(
         Object.keys(entry).map((name: string) => {
             const exclude = Object.keys(entry).slice()
@@ -160,10 +159,18 @@ const conf: Configuration = {
             return new HtmlWebpackPlugin({
                 filename: name + ".html",
                 excludeChunks: exclude,
-                template: path.join("renderer", "public", name + ".ejs"),
+                minify:
+                    process.env.NODE_ENV !== "production"
+                        ? false
+                        : {
+                              collapseWhitespace: true,
+                              minifyCSS: true,
+                          },
+                template: path.join("renderer", "template", name + ".ejs"),
                 inject: "body",
-                // favicon: path.join("renderer", "assets", "images", "favicon.ico"),
                 title: titles[name],
+                development:
+                    process.env.NODE_ENV !== "production" ? '<div id="this-is-for-development-node"></div>' : "",
             })
         }),
     ),

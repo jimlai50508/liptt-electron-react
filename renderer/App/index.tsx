@@ -19,12 +19,19 @@ export default class extends Component<ComponentProps, ComponentState> {
 
     constructor(props: ComponentProps) {
         super(props)
-        this.state = { isDevMode: false }
+        this.state = { isDevMode: this.isDevelopment() }
         this.appStore = new AppStore()
     }
 
+    private isDevelopment(): boolean {
+        if (document.getElementById("this-is-for-development-node")) {
+            return true
+        }
+        return false
+    }
+
     public componentDidMount() {
-        PromiseIpcRenderer.send<boolean>("/is-dev-mode").then(mode => this.setState({ isDevMode: mode }))
+        // PromiseIpcRenderer.send<boolean>("/is-dev-mode").then(mode => this.setState({ isDevMode: mode }))
     }
 
     public render() {
