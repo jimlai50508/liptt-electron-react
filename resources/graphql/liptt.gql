@@ -1,0 +1,42 @@
+type Query {
+    me: User
+}
+
+type Mutation {
+    logout: String
+    login(user: UserInput!): LoginResponse
+}
+
+enum LoginResponse {
+    WrongPassword
+    Overloading
+    Ok
+    WebSocketFailed
+    HeavyLogin
+    WhereAmI
+}
+
+enum FavoriteItemType {
+    Board
+    Folder
+    Horizontal
+}
+
+type FavoriteItem {
+    key: Int
+    type: FavoriteItemType
+    name: String
+    description: String
+    popularity: Int
+}
+
+input UserInput {
+    username: String!
+    password: String!
+}
+
+type User {
+    username: String!
+    password: String
+    favor: [FavoriteItem]
+}

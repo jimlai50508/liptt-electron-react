@@ -1,38 +1,41 @@
 {
-    "defaultSeverity": "error",
-    "extends": [
-        "tslint:latest", "tslint-react"
+  "defaultSeverity": "error",
+  "extends": ["tslint:latest", "tslint-react", "tslint-config-prettier"],
+  "linterOptions": {
+    "exclude": ["renderer/**/*.d.ts"]
+  },
+  "jsRules": {},
+  "rules": {
+    "object-literal-sort-keys": false,
+    "ordered-imports": false,
+    "interface-name": false,
+    "no-empty-interface": false,
+    "max-line-length": false,
+    "max-classes-per-file": false,
+    "no-submodule-imports": false,
+    "no-empty": false,
+    "no-implicit-dependencies": [
+      true,
+      "dev",
+      ["assets", "renderer", "components", "model", "encoding", "stores"]
     ],
-    "linterOptions": {
-        "exclude": [
-            "renderer/**/*.d.ts"
-        ]
-    },
-    "jsRules": {},
-    "rules": {
-        "object-literal-sort-keys": false,
-        "ordered-imports": false,
-        "interface-name": false,
-        "no-empty-interface": false,
-        "max-line-length": false,
-        "max-classes-per-file": false,
-        "no-submodule-imports": false,
-        "no-empty": false,
-        "no-implicit-dependencies": [true, "dev", ["assets", "renderer", "components", "model", "encoding"]],
-        "no-console": false,
-        "no-var-requires": false,
-        "no-duplicate-imports": false,
-        "no-string-literal": false,
-        "no-bitwise": false,
-        "member-ordering": false,
-        "arrow-parens": false,
-        "variable-name": [ true, "allow-leading-underscore", "allow-pascal-case" ],
-        "semicolon": [true, "never"],
-        "jsx-boolean-value": false,
-        "jsx-no-bind": true,
-        "jsx-no-multiline-js": false,
-        "jsx-alignment": false,
-        "jsx-no-lambda": false
-    },
-    "rulesDirectory": []
+    "no-console": false,
+    "no-var-requires": false,
+    "no-duplicate-imports": false,
+    "no-string-literal": false,
+    "no-bitwise": false,
+    "member-ordering": false,
+    "arrow-parens": false,
+    "variable-name": [true, "allow-leading-underscore", "allow-pascal-case"],
+    "jsx-boolean-value": false,
+    "jsx-no-bind": true,
+    "jsx-no-multiline-js": false,
+    "jsx-alignment": false,
+    "jsx-wrap-multilines": [
+      "error",
+      { "declaration": false, "assignment": false }
+    ],
+    "jsx-no-lambda": false
+  },
+  "rulesDirectory": []
 }

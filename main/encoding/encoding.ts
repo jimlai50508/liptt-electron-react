@@ -8,7 +8,6 @@ export class Big5UAO {
     public static GetString(bytes: Buffer | Uint8Array): string
     public static GetString(bytes: Buffer | Uint8Array, index: number, count: number): string
     public static GetString(bytes: Uint8Array | Buffer, index?: number, count?: number): string {
-
         if (!index || !count) {
             index = 0
             count = bytes.length
@@ -18,7 +17,7 @@ export class Big5UAO {
         let i = index
 
         while (i < index + count) {
-            if (bytes[i] <= 0x7F) {
+            if (bytes[i] <= 0x7f) {
                 sb.push(String.fromCodePoint(bytes[i++]))
             } else {
                 let k = bytes[i++]
@@ -29,7 +28,7 @@ export class Big5UAO {
                     if (v) {
                         sb.push(String.fromCodePoint(v))
                     } else {
-                        sb.push(String.fromCodePoint(0xFFFD))
+                        sb.push(String.fromCodePoint(0xfffd))
                     }
                 } else {
                     break
@@ -43,13 +42,13 @@ export class Big5UAO {
         const arr: number[] = []
         for (let i = 0; i < s.length; i++) {
             const k = s.charCodeAt(i)
-            if (k <= 0x7F) {
+            if (k <= 0x7f) {
                 arr.push(k)
             } else {
                 const v = u2b[k]
                 if (v) {
                     arr.push(v >> 8)
-                    arr.push(v & 0xFF)
+                    arr.push(v & 0xff)
                 }
             }
         }

@@ -1,6 +1,6 @@
 import { Big5UAO, big5HalfWidthList } from "../../encoding"
 import { Block } from "./block"
-import { Attribute, ForeColor, BackColor } from "./color"
+import { Color, Attribute } from "./color"
 
 export const TerminalWidth = 80
 export const TerminalHeight = 24
@@ -13,25 +13,19 @@ export class Terminal {
     private content: Block[][]
     /** 代表游標當前位置(X座標) */
     private col: number
-     /** 代表游標當前位置(Y座標) */
+    /** 代表游標當前位置(Y座標) */
     private row: number
     /** 暫存的游標位置(X座標) */
     private saveCol: number
     /** 暫存的游標位置(Y座標) */
     private saveRow: number
-    /** 代表當前游標的前景顏色 */
-    private curF: ForeColor
-    /** 代表當前游標的背景顏色 */
-    private curB: BackColor
-    /** 代表當前游標的樣式 */
-    private curA: Attribute
+    /** 代表當前游標的顏色 */
+    private curColor: Color
 
     constructor() {
         this.col = 0
         this.row = 0
-        this.curF = ForeColor.White
-        this.curB = BackColor.Black
-        this.curA = Attribute.None
+        this.curColor = new Color()
         this.saveCol = 0
         this.saveRow = 0
         this.content = []
@@ -143,7 +137,7 @@ export class Terminal {
         if (this.row + n >= TerminalHeight) {
             const r = this.row + n - TerminalHeight + 1
             if (r < TerminalHeight) {
-                for (let i = 0; i < (TerminalHeight - r); i++) {
+                for (let i = 0; i < TerminalHeight - r; i++) {
                     const tmp = this.content[i]
                     this.content[i] = this.content[i + r]
                     this.content[i + r] = tmp
@@ -207,8 +201,7 @@ export class Terminal {
         if (this.col < TerminalWidth) {
             this.col++
         } else if (this.row < TerminalHeight) {
-            this.DefaultCurrentAttribute()
-            this.DefaultCurrentColor()
+            this.DefaultCurrentStyle()
             this.col = 0
             this.row++
         }
@@ -229,98 +222,21 @@ export class Terminal {
     /** 從當前字塊插入資料 */
     public Insert(data: number) {
         const b = this.content[this.row][this.col]
-        b.Attribute = this.curA
-        b.Foreground = this.curF
-        b.Background = this.curB
+        b.Attribute = this.curColor.attribute
+        b.Foreground = this.curColor.color
+        b.Background = this.curColor.background
         b.Content = data
         this.Next()
     }
 
-    /** 重設當前屬性 */
-    public DefaultCurrentAttribute() {
-        this.curA = Attribute.None
-    }
-
     /** 重設當前文字及背景 */
-    public DefaultCurrentColor() {
-        this.curF = ForeColor.White
-        this.curB = BackColor.Black
+    public DefaultCurrentStyle() {
+        this.curColor.default()
     }
 
     /** 設定當前字塊樣式(屬性, 文字, 背景 ...) */
     public SetCurrentStyle(style: number) {
-        switch (style) {
-        case 0:
-            this.DefaultCurrentAttribute()
-            this.DefaultCurrentColor()
-            break
-        case 1:
-            this.curA |= Attribute.Bold
-            break
-        case 4:
-            this.curA |= Attribute.Underline
-            break
-        case 5:
-            this.curA |= Attribute.Blink
-            break
-        case 7:
-            this.curA |= Attribute.Reverse
-            break
-        case 8:
-            this.curA |= Attribute.Invisible
-            break
-        case 30:
-            this.curF = ForeColor.Black
-            break
-        case 31:
-            this.curF = ForeColor.Red
-            break
-        case 32:
-            this.curF = ForeColor.Green
-            break
-        case 33:
-            this.curF = ForeColor.Yellow
-            break
-        case 34:
-            this.curF = ForeColor.Blue
-            break
-        case 35:
-            this.curF = ForeColor.Purple
-            break
-        case 36:
-            this.curF = ForeColor.Cyan
-            break
-        case 37:
-            this.curF = ForeColor.White
-            break
-        case 40:
-            this.curB = BackColor.Black
-            break
-        case 41:
-            this.curB = BackColor.Red
-            break
-        case 42:
-            this.curB = BackColor.Green
-            break
-        case 43:
-            this.curB = BackColor.Yellow
-            break
-        case 44:
-            this.curB = BackColor.Blue
-            break
-        case 45:
-            this.curB = BackColor.Purple
-            break
-        case 46:
-            this.curB = BackColor.Cyan
-            break
-        case 47:
-            this.curB = BackColor.White
-            break
-        case 48:
-            this.curB = BackColor.HighRed
-            break
-        }
+        this.curColor.setStyle(style)
     }
 
     /** 深層副本 */
@@ -336,9 +252,10 @@ export class Terminal {
         }
         term.col = this.col
         term.row = this.row
-        term.curA = this.curA
-        term.curB = this.curB
-        term.curF = this.curF
+        term.curColor = new Color()
+        term.curColor.attribute = this.curColor.attribute
+        term.curColor.color = this.curColor.color
+        term.curColor.background = this.curColor.background
         term.saveCol = this.saveCol
         term.saveRow = this.saveRow
         return term
@@ -377,6 +294,14 @@ export class Terminal {
         return this.content[row][col]
     }
 
+    public GetLines(): string[] {
+        const lines: string[] = []
+        for (let i = 0; i < TerminalHeight; i++) {
+            lines.push(this.GetString(i))
+        }
+        return lines
+    }
+
     public GetRenderString(): string {
         if (!this.content) {
             return ""
@@ -392,56 +317,74 @@ export class Terminal {
     /** 取得渲染成HTML的單行資料 */
     public static GetRenderStringLine(line: Block[]): string {
         let str: string = ""
-        str += "<span class=\"line\">"
+        str += '<span class="line">'
         let fg: number = line[0].Foreground
         let bg: number = line[0].Background
         let attr: Attribute = line[0].Attribute
         let data: byte[] = []
         let cache: Block
+        let groupWidth = 0
         let isWChar: boolean = false
         for (let j = 0; j < TerminalWidth; j++) {
             const b = line[j]
             if (isWChar) {
-                if ((cache.Foreground !== b.Foreground) || (cache.Background !== b.Background) || (cache.Attribute !== b.Attribute)) {
+                if (
+                    cache.Foreground !== b.Foreground ||
+                    cache.Background !== b.Background ||
+                    cache.Attribute !== b.Attribute
+                ) {
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
-                    str += this.getHalfColorContent(cache.Content, b.Content, cache.Foreground, cache.Background, cache.Attribute, b.Foreground, b.Background, b.Attribute)
+                    str += this.getHalfColorContent(
+                        cache.Content,
+                        b.Content,
+                        cache.Foreground,
+                        cache.Background,
+                        cache.Attribute,
+                        b.Foreground,
+                        b.Background,
+                        b.Attribute,
+                    )
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
-                } else if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
+                } else if (fg !== b.Foreground || bg !== b.Background || attr !== b.Attribute) {
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
                     data.push(cache.Content)
                     data.push(b.Content)
+                    groupWidth += 1
                     fg = b.Foreground
                     bg = b.Background
                     attr = b.Attribute
                 } else if (big5HalfWidthList.includes((cache.Content << 8) + b.Content)) {
                     // push to data
-                    str += this.getGroup(data, fg, bg, attr)
+                    str += this.getGroup(data, fg, bg, attr, groupWidth)
                     str += this.getFullWidthContent(cache.Content, b.Content, fg, bg, attr)
                     data = []
+                    groupWidth = 0
                 } else {
                     data.push(cache.Content)
                     data.push(b.Content)
+                    groupWidth += 1
                 }
 
                 isWChar = false
-            } else if (b.Content >= 0x7F) {
+            } else if (b.Content >= 0x7f) {
                 cache = b
                 isWChar = true
             } else {
-
-                if ((fg !== b.Foreground) || (bg !== b.Background) || (attr !== b.Attribute)) {
-
+                if (fg !== b.Foreground || bg !== b.Background || attr !== b.Attribute) {
                     if (data.length > 0) {
-                        str += this.getGroup(data, fg, bg, attr)
+                        str += this.getGroup(data, fg, bg, attr, groupWidth)
                         data = []
+                        groupWidth = 0
                     }
 
                     fg = b.Foreground
@@ -450,11 +393,12 @@ export class Terminal {
                 }
 
                 data.push(b.Content)
+                groupWidth += 0.5
             }
         }
 
         if (data.length > 0) {
-            str += this.getGroup(data, fg, bg, attr)
+            str += this.getGroup(data, fg, bg, attr, groupWidth)
             data = null
         }
 
@@ -462,45 +406,75 @@ export class Terminal {
         return str
     }
 
-    private static getGroup(data: byte[], foreground: number, background: number, attr: Attribute): string {
+    private static getGroup(
+        data: byte[],
+        foreground: number,
+        background: number,
+        attr: Attribute,
+        groupWidth: number,
+    ): string {
         const bytes = Uint8Array.from(data)
-        const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
-        const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
+        const fg =
+            attr & Attribute.Bold
+                ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+                : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+        const bg = `b${attr & Attribute.Reverse ? 87 - background : background}`
         const s = Big5UAO.GetString(bytes)
-        let width = 0
-        for (let k = 0; k < s.length; k++) {
-            if (s.charCodeAt(k) < 0x7F) {
-                width += 0.5
-            } else {
-                width += 1
-            }
-        }
+        // let width = 0
+        // for (let k = 0; k < s.length; k++) {
+        //     if (s.charCodeAt(k) < 0x7F) {
+        //         width += 0.5
+        //     } else {
+        //         width += 1
+        //     }
+        // }
 
-        return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${width}em\">` + Terminal.convertHTML(s) + "</span>"
+        return (
+            `<span class="keepSpace ${fg} ${bg}" style=\"width: ${groupWidth}em\">` +
+            Terminal.convertHTML(s) +
+            "</span>"
+        )
     }
 
-    private static getHalfColorContent(ldata: byte, rdata: byte, lfg: number, lbg: number, lattr: Attribute, rfg: number, rbg: number, rattr: Attribute): string {
+    private static getHalfColorContent(
+        ldata: byte,
+        rdata: byte,
+        lfg: number,
+        lbg: number,
+        lattr: Attribute,
+        rfg: number,
+        rbg: number,
+        rattr: Attribute,
+    ): string {
         const bytes = Uint8Array.from([ldata, rdata])
         let lfgcolor = lattr & Attribute.Bold ? "b" : ""
         let rfgcolor = rattr & Attribute.Bold ? "b" : ""
 
-        lfgcolor += lattr & Attribute.Reverse ? `f${(67 - lfg)}` : `f${lfg}`
-        rfgcolor += rattr & Attribute.Reverse ? `f${(67 - rfg)}` : `f${rfg}`
+        lfgcolor += lattr & Attribute.Reverse ? `f${67 - lfg}` : `f${lfg}`
+        rfgcolor += rattr & Attribute.Reverse ? `f${67 - rfg}` : `f${rfg}`
 
-        const lbgcolor = `b${lattr & Attribute.Reverse ? (87 - lbg) : lbg}`
-        const rbgcolor = `b${rattr & Attribute.Reverse ? (87 - rbg) : rbg}`
+        const lbgcolor = `b${lattr & Attribute.Reverse ? 87 - lbg : lbg}`
+        const rbgcolor = `b${rattr & Attribute.Reverse ? 87 - rbg : rbg}`
 
         const s = Big5UAO.GetString(bytes)
-        const code = (ldata << 8) + rdata
-        const style = big5HalfWidthList.includes(code) ? `style="width: 1em;"` : ""
+        const style = `style="width: 1em;"`
         const text = Terminal.convertHTML(s)
         return `<span class="halfTextContainer"><span ${style} class="halfText left_${lfgcolor} right_${rfgcolor} left_${lbgcolor} right_${rbgcolor}" text="${text}">${text}</span></span>`
     }
 
-    private static getFullWidthContent(ldata: byte, rdata: byte, foreground: number, background: number, attr: Attribute): string {
+    private static getFullWidthContent(
+        ldata: byte,
+        rdata: byte,
+        foreground: number,
+        background: number,
+        attr: Attribute,
+    ): string {
         const bytes = Uint8Array.from([ldata, rdata])
-        const fg = attr & Attribute.Bold ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}` : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
-        const bg = `b${attr & Attribute.Reverse ? (87 - background) : background}`
+        const fg =
+            attr & Attribute.Bold
+                ? `bf${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+                : `f${attr & Attribute.Reverse ? 67 - foreground : foreground}`
+        const bg = `b${attr & Attribute.Reverse ? 87 - background : background}`
         const s = Big5UAO.GetString(bytes)
         const text = Terminal.convertHTML(s)
         return `<span class="keepSpace ${fg} ${bg}" style=\"width: ${1}em\">${text}</span>`
@@ -508,13 +482,84 @@ export class Terminal {
 
     private static convertHTML(s: string): string {
         s = s.replace("&", "&amp;")
-        s = s.replace("\"", "&quot;")
+        s = s.replace('"', "&quot;")
         s = s.replace("<", "&lt;")
         s = s.replace(">", "&gt;")
         s = s.replace("®", "&reg;")
         s = s.replace("©", "&copy;")
         s = s.replace("™", "&trade;")
         return s
+    }
+
+    private static GetBytesWriteColor(s: string, color: Color): byte[] {
+        const b = [0x03, 0x1b, 0x5b, 0x44]
+        if ("attribute" in color) {
+            if (color.attribute & Attribute.Bold) {
+                b.push(0x31, 0x3b)
+            }
+            if (color.attribute & Attribute.Underline) {
+                b.push(0x34, 0x3b)
+            }
+            if (color.attribute & Attribute.Blink) {
+                b.push(0x35, 0x3b)
+            }
+            if (color.attribute & Attribute.Reverse) {
+                b.push(0x37, 0x3b)
+            }
+            if (color.attribute & Attribute.Invisible) {
+                b.push(0x38, 0x3b)
+            }
+        }
+        if ("color" in color) {
+            const n = color.color
+            b.push(n / 10 + 0x30, (n % 10) + 0x30, 0x3b)
+        }
+        if ("background" in color) {
+            const n = color.background
+            b.push(n / 10 + 0x30, (n % 10) + 0x30, 0x3b)
+        }
+        b.push(0x1b, 0x5b, 0x43)
+        b.push(...Big5UAO.GetBytes(s))
+        b.push(0x03)
+        return b
+    }
+
+    public static GetBytesFromContent(s: string): Uint8Array {
+        const lines = s.split("\n")
+        const data: number[] = []
+
+        for (const l of lines) {
+            if (l) {
+                for (const seg of l.split(/(\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m)/)) {
+                    if (/^\*\[(?:\d+)?(?:;\d+)*m.*?\*\[m$/.test(seg)) {
+                        const color: Color = new Color()
+                        let start = 2
+                        let c = 0
+                        for (; start < seg.length; start++) {
+                            if (seg[start] === "m") {
+                                break
+                            }
+                            if (seg[start] === ";") {
+                                color.setStyle(c)
+                                c = 0
+                                continue
+                            }
+                            const t = parseInt(seg[start], 10)
+                            if (t) {
+                                c = c * 10 + t
+                            }
+                        }
+                        const a = start + 1
+                        const b = seg.length - a - 3
+                        data.push(...Terminal.GetBytesWriteColor(seg.substr(a, b), color))
+                    } else {
+                        data.push(...Big5UAO.GetBytes(seg))
+                    }
+                }
+            }
+            data.push(0x0d)
+        }
+        return new Uint8Array(data)
     }
 }
 

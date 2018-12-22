@@ -6,14 +6,15 @@ import * as shell from "shelljs"
 import TsImportPlugin = require("ts-import-plugin")
 import * as HtmlWebpackPlugin from "html-webpack-plugin"
 import * as MiniCssExtractPlugin from "mini-css-extract-plugin"
+const WebpackBar = require("webpackbar")
+const packageJSON = require("../package.json")
 // var nodeExternals = require('webpack-node-externals')
-
 const entry: Entry = {
-    index:  "./renderer/index.tsx",
+    index: "./renderer/index.tsx",
 }
 
 const titles = {
-    index: "LiPTT",
+    index: packageJSON.name,
 }
 
 const distPath = path.resolve(__dirname, "../dist/renderer")
@@ -28,6 +29,9 @@ const conf: Configuration = {
         publicPath: "./",
     },
     target: "electron-renderer",
+    resolveLoader: {
+        modules: ["node_modules", "./.webpack/loaders"],
+    },
     module: {
         rules: [
             {
@@ -37,18 +41,20 @@ const conf: Configuration = {
                     configFileName: "tsconfig.json",
                     silent: true,
                     getCustomTransformers: () => ({
-                        before: [TsImportPlugin([
-                            {
-                              libraryName: "antd",
-                              libraryDirectory: "lib",
-                              style: true,
-                            },
-                            {
-                              libraryName: "material-ui",
-                              libraryDirectory: "",
-                              camel2DashComponentName: false,
-                            },
-                          ])],
+                        before: [
+                            TsImportPlugin([
+                                {
+                                    libraryName: "antd",
+                                    libraryDirectory: "lib",
+                                    style: true,
+                                },
+                                {
+                                    libraryName: "material-ui",
+                                    libraryDirectory: "",
+                                    camel2DashComponentName: false,
+                                },
+                            ]),
+                        ],
                     }),
                     // useBabel: false,
                     // babelOptions: {
@@ -64,28 +70,26 @@ const conf: Configuration = {
             },
             {
                 test: /\.(png|jp(e?)g|gif|svg)$/,
-                use: [
-                    { loader: "file-loader", options: { name: "assets/images/[name].[ext]" }},
-                ],
+                use: [{ loader: "file-loader", options: { name: "assets/images/[name].[ext]" } }],
             },
             {
                 test: /\.(woff|woff2|eot|ttf|otf)(\?.*)?$/,
-                use : [
-                    { loader: "file-loader", options: {name: "assets/fonts/[name].[ext]?[hash]"} },
-                    { loader: "url-loader",  query:   {name: "assets/fonts/[name].[ext]"} },
+                use: [
+                    { loader: "file-loader", options: { name: "assets/fonts/[name].[ext]?[hash]" } },
+                    { loader: "url-loader", query: { name: "assets/fonts/[name].[ext]" } },
                 ],
             },
             {
                 test: /\.css$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
-                    { loader: "css-loader"},
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
+                    { loader: "css-loader" },
                 ],
             },
             {
                 test: /\.less$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
                     { loader: "css-loader" },
                     // { loader: "typings-for-css-modules-loader",
                     //   options: {
@@ -97,23 +101,31 @@ const conf: Configuration = {
                     //         localIdentName: "[local]-[hash]",
                     //     },
                     // },
-                    { loader: "less-loader", options: { javascriptEnabled: true, modifyVars: {
-                        "primary-color": "#1DA57A",
-                    } } },
+                    {
+                        loader: "less-loader",
+                        options: {
+                            javascriptEnabled: true,
+                            modifyVars: {
+                                // 改變主題色
+                                // "primary-color": "#1DA57A",
+                            },
+                        },
+                    },
                 ],
             },
             {
                 test: /\.s(a|c)ss$/,
                 use: [
-                    MiniCssExtractPlugin.loader,
-                    { loader: "typings-for-css-modules-loader",
-                      options: {
-                          modules: true,
-                          namedExport: true,
-                          camelCase: true,
-                          minimize: true,
-                          localIdentName: "[local]-[hash]",
-                      },
+                    process.env.NODE_ENV !== "production" ? "style-loader" : MiniCssExtractPlugin.loader,
+                    {
+                        loader: "typings-for-css-modules-loader",
+                        options: {
+                            modules: true,
+                            namedExport: true,
+                            camelCase: true,
+                            minimize: true,
+                            localIdentName: "[local]-[hash:base64:6]",
+                        },
                     },
                     { loader: "sass-loader" },
                 ],
@@ -129,33 +141,39 @@ const conf: Configuration = {
         ],
     },
     plugins: [
+        new WebpackBar({ name: packageJSON.name, color: "blue" }),
         new EventHooksPlugin({
             beforeRun: () => {
                 shell.rm("-rf", distPath + "/*.*")
             },
-            done: () => {
-            },
+            done: () => {},
         }),
         new MiniCssExtractPlugin({
             filename: "[name].[hash].css",
             chunkFilename: "[id].[hash].css",
         }),
-        // new DllReferencePlugin({
-        //     context: vendor,
-        //     manifest: require(path.resolve(__dirname, "../manifest.json")),
-        // }),
-    ].concat(Object.keys(entry).map((name: string) => {
-        const exclude = Object.keys(entry).slice()
-        exclude.splice(Object.keys(entry).indexOf(name), 1)
-        return new HtmlWebpackPlugin({
-            filename: name + ".html",
-            excludeChunks: exclude,
-            template: path.join("renderer", "public", name + ".ejs"),
-            inject: "body",
-            // favicon: path.join("renderer", "assets", "images", "favicon.ico"),
-            title: titles[name],
-        })
-    })),
+    ].concat(
+        Object.keys(entry).map((name: string) => {
+            const exclude = Object.keys(entry).slice()
+            exclude.splice(Object.keys(entry).indexOf(name), 1)
+            return new HtmlWebpackPlugin({
+                filename: name + ".html",
+                excludeChunks: exclude,
+                minify:
+                    process.env.NODE_ENV !== "production"
+                        ? false
+                        : {
+                              collapseWhitespace: true,
+                              minifyCSS: true,
+                          },
+                template: path.join("renderer", "template", name + ".ejs"),
+                inject: "body",
+                title: titles[name],
+                development:
+                    process.env.NODE_ENV !== "production" ? '<div id="this-is-for-development-node"></div>' : "",
+            })
+        }),
+    ),
 }
 
 export default conf

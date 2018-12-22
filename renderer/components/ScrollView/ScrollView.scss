@@ -1,0 +1,51 @@
+// reserve 寬度要大於原始滾動條寬度
+// reserve 寬度要大於新的 track 寬度
+$reserve: 20px;
+$trackWidth: 20px;
+$thumbWidth: 14px;
+$thumbColor: rgba(75, 211, 63, 0.7);
+
+.scrollView {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    .track {
+        width: $trackWidth;
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        // background-color: cornflowerblue;
+        .thumb {
+            width: $thumbWidth;
+            height: 18%;
+            border-radius: $thumbWidth;
+            background-color: $thumbColor;
+            transition: background-color 0.2s;
+            position: absolute;
+            left: calc(50% - #{$thumbWidth} / 2);
+            z-index: 1;
+            &.hide {
+                background-color: rgba(0, 0, 0, 0);
+            }
+            &:hover {
+                background-color: $thumbColor;
+            }
+            &:active,
+            &:focus {
+                cursor: default;
+            }
+        }
+    }
+    .content {
+        overflow-y: auto;
+        width: calc(100% + #{$reserve});
+        height: 100%;
+        position: relative;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        padding-right: $reserve;
+    }
+}

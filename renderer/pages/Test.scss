@@ -1,0 +1,13 @@
+.container {
+    position: relative;
+    background: #000000;
+    clear: both;
+}
+
+.myRow {
+    width: "100%";
+    .myDiv {
+        background: #000000;
+        width: "100%";
+    }
+}

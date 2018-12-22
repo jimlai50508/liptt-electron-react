@@ -26,6 +26,8 @@ export enum PTTState {
     Synchronizing,
     /** 要刪除上次錯誤的嘗試紀錄嗎? */
     Log,
+    /** 掰掰 */
+    Quit,
     /** 任意鍵繼續 */
     AnyKey,
     /** 主功能表 */
@@ -56,10 +58,30 @@ export enum PTTState {
     ArticleDeleted,
     /** 推/噓 */
     Comment,
-    /** 確定要離開? */
-    ExitConcern,
     /** 找不到這個文章代碼 */
     AIDNotFound,
+    /** 使用者列表 */
+    EasyTalk,
+    /** 個人信箱 */
+    PersonMail,
+    /** 郵件清單 */
+    MailList,
+    /** 寄站內信 */
+    SendMail,
+    /** 信件標題 */
+    SendMailSubject,
+    /** 編輯文章或信件內容 */
+    EditFile,
+    /** 處理文章或信件 */
+    ProcessFile,
+    /** 選擇簽名檔 */
+    Signature,
+    /** 已順利寄出 */
+    SendMailSuccess,
+    /** 編輯器自動復原 */
+    UnsavedFile,
+    /** 信箱滿出來了 */
+    MailOverflow,
     /** 未定義的狀態 */
     WhereAmI,
     /** 已連線 */
@@ -74,136 +96,170 @@ export enum PTTState {
 
 export function StateString(s: PTTState): string {
     switch (s) {
-    case PTTState.None:
-        return "完全沒有畫面"
-    case PTTState.Username:
-        return "請輸入使用者帳號"
-    case PTTState.Password:
-        return "請輸入使用者密碼"
-    case PTTState.Horse:
-        return "PTT批踢踢實業坊"
-    case PTTState.Overloading:
-        return "系統過載"
-    case PTTState.HeavyLogin:
-        return "登入太頻繁"
-    case PTTState.AlreadyLogin:
-        return "有重複登入"
-    case PTTState.WrongPassword:
-        return "錯誤的帳號密碼"
-    case PTTState.Accept:
-        return "密碼正確"
-    case PTTState.Logging:
-        return "登入中"
-    case PTTState.Synchronizing:
-        return "同步處理中"
-    case PTTState.Log:
-        return "要刪除上次錯誤的嘗試紀錄嗎"
-    case PTTState.AnyKey:
-        return "任意鍵繼續"
-    case PTTState.MainPage:
-        return "主功能表"
-    case PTTState.Hot:
-        return "熱門看板"
-    case PTTState.Favorite:
-        return "我的最愛"
-    case PTTState.BoardSuggest:
-        return "搜尋"
-    case PTTState.SearchGroup:
-        return "相關看板一覽表"
-    case PTTState.AddFavorite:
-        return "增加我的最愛"
-    case PTTState.Category:
-        return "分類看板"
-    case PTTState.Board:
-        return "看板"
-    case PTTState.BoardInfo:
-        return "看板資訊"
-    case PTTState.Article:
-        return "瀏覽文章"
-    case PTTState.ArticleID:
-        return "文章ID"
-    case PTTState.ArticleDeleted:
-        return "文章已被刪除"
-    case PTTState.Comment:
-        return "推/噓"
-    case PTTState.ExitConcern:
-        return "確定要離開"
-    case PTTState.AIDNotFound:
-        return "找不到文章代碼"
-    case PTTState.Connected:
-        return "已連線"
-    case PTTState.WebSocketClosed:
-        return "連線關閉"
-    case PTTState.WebSocketFailed:
-        return "連線失敗"
-    case PTTState.Timeout:
-        return "連線逾時"
-    default:
-        return "未定義的狀態"
+        case PTTState.None:
+            return "完全沒有畫面"
+        case PTTState.Username:
+            return "請輸入使用者帳號"
+        case PTTState.Password:
+            return "請輸入使用者密碼"
+        case PTTState.Horse:
+            return "PTT批踢踢實業坊"
+        case PTTState.Overloading:
+            return "系統過載"
+        case PTTState.HeavyLogin:
+            return "登入太頻繁"
+        case PTTState.AlreadyLogin:
+            return "有重複登入"
+        case PTTState.WrongPassword:
+            return "錯誤的帳號密碼"
+        case PTTState.Accept:
+            return "密碼正確"
+        case PTTState.Logging:
+            return "登入中"
+        case PTTState.Synchronizing:
+            return "同步處理中"
+        case PTTState.Log:
+            return "要刪除上次錯誤的嘗試紀錄嗎"
+        case PTTState.Quit:
+            return "已離開"
+        case PTTState.AnyKey:
+            return "任意鍵繼續"
+        case PTTState.MainPage:
+            return "主功能表"
+        case PTTState.Hot:
+            return "熱門看板"
+        case PTTState.Favorite:
+            return "我的最愛"
+        case PTTState.BoardSuggest:
+            return "搜尋"
+        case PTTState.SearchGroup:
+            return "相關看板一覽表"
+        case PTTState.AddFavorite:
+            return "增加我的最愛"
+        case PTTState.Category:
+            return "分類看板"
+        case PTTState.Board:
+            return "看板"
+        case PTTState.BoardInfo:
+            return "看板資訊"
+        case PTTState.Article:
+            return "瀏覽文章"
+        case PTTState.ArticleID:
+            return "文章ID"
+        case PTTState.ArticleDeleted:
+            return "文章已被刪除"
+        case PTTState.Comment:
+            return "推/噓"
+        case PTTState.AIDNotFound:
+            return "找不到文章代碼"
+        case PTTState.EasyTalk:
+            return "休閒聊天（使用者列表）"
+        case PTTState.PersonMail:
+            return "個人信箱"
+        case PTTState.MailList:
+            return "郵件選單"
+        case PTTState.SendMail:
+            return "寄站內信"
+        case PTTState.SendMailSubject:
+            return "輸入信件標題"
+        case PTTState.EditFile:
+            return "編輯文章"
+        case PTTState.ProcessFile:
+            return "處理文章"
+        case PTTState.Signature:
+            return "選擇簽名檔"
+        case PTTState.SendMailSuccess:
+            return "已順利寄出"
+        case PTTState.UnsavedFile:
+            return "編輯器自動復原"
+        case PTTState.MailOverflow:
+            return "您保存信件數目已超出上限"
+        case PTTState.Connected:
+            return "已連線"
+        case PTTState.WebSocketClosed:
+            return "連線關閉"
+        case PTTState.WebSocketFailed:
+            return "連線失敗"
+        case PTTState.Timeout:
+            return "連線逾時"
+        default:
+            return "未定義的狀態"
     }
 }
 
 const articleFootReg = /瀏覽 第 ([\d\/]+) 頁 \(([\s\d]+)\%\)  目前顯示: 第\s*(\d+)\s*~\s*(\d+)\s*行/
-let flag: object
+let flag: boolean
 let prevMatch: RegExpExecArray
 
 export function StateFilter(t: Terminal) {
-    const line22 = t.GetString(22)
-    const line23 = t.GetString(23)
-    if (t.GetString(1).startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
+    const lines = t.GetLines()
+    if (lines[1].startsWith("請輸入看板名稱(按空白鍵自動搜尋):")) {
         return PTTState.BoardSuggest
-    } else if (line23.includes("登入太頻繁")) {
+    } else if (lines[23].includes("登入太頻繁")) {
         return PTTState.HeavyLogin
-    } else if (line23.includes("您要刪除以上錯誤嘗試的記錄嗎")) {
+    } else if (lines[23].includes("您要刪除以上錯誤嘗試的記錄嗎")) {
         return PTTState.Log
-    } else if (line23.trimLeft().startsWith("◆ 此文章無內容")) {
+    } else if (lines[23].trimLeft().startsWith("◆ 此文章無內容")) {
         return PTTState.ArticleDeleted
-    } else if (line23.includes("您覺得這篇文章")) {
+    } else if (lines[23].includes("您覺得這篇文章")) {
         return PTTState.Comment
-    } else if (articleFootReg.test(line23)) {
+    } else if (lines[23].startsWith(" 鴻雁往返  (R/y)回信 (x)站內轉寄 (d/D)刪信 (^P)寄發新信")) {
+        return PTTState.MailList
+    } else if (lines[23].trimLeft().startsWith("編輯文章  (^Z/F1)說明 (^P/^G)插入符號/範本 (^X/^Q)離開")) {
+        return PTTState.EditFile
+    } else if (lines[23].startsWith(" ◆ 此次停留時間")) {
+        prevMatch = null
+        flag = false
+        return PTTState.Quit
+    } else if (articleFootReg.test(lines[23])) {
         if (flag) {
-            const match = articleFootReg.exec(line23)
+            const match = articleFootReg.exec(lines[23])
             if (match) {
                 if (match[3] === prevMatch[3]) {
+                    console.log("FIXME: article footer wrong match")
                     return PTTState.WhereAmI
                 } else {
                     prevMatch = match
                 }
             }
         } else {
-            flag = {}
-            prevMatch = articleFootReg.exec(line23)
+            flag = true
+            prevMatch = articleFootReg.exec(lines[23])
         }
         return PTTState.Article
     } else if (t.GetSubstring(23, 66, 74) === "[呼叫器]") {
-        return PTTState.MainPage
-    } else if (line22.includes("您想刪除其他重複登入的連線嗎")) {
+        if (lines[0].startsWith("【電子郵件】")) {
+            return PTTState.PersonMail
+        } else if (lines[0].startsWith("【主功能表】")) {
+            return PTTState.MainPage
+        }
+    } else if (lines[22].startsWith("已順利寄出，是否自存底稿(Y/N)？")) {
+        return PTTState.SendMailSuccess
+    } else if (lines[22].includes("您想刪除其他重複登入的連線嗎")) {
         return PTTState.AlreadyLogin
-    } else if (line22.includes("您確定要離開")) {
-        return PTTState.ExitConcern
-    } else if (line22.startsWith("登入中")) {
+    } else if (lines[22].startsWith("登入中")) {
         return PTTState.Logging
-    } else if (line22.startsWith("正在更新與同步")) {
-        if (line23.includes("任意鍵")) {
+    } else if (lines[22].startsWith("正在更新與同步")) {
+        if (lines[23].includes("任意鍵")) {
             return PTTState.AnyKey
         } else {
             return PTTState.Synchronizing
         }
-    } else if (t.GetString(21).includes("密碼不對或無此帳號")) {
+    } else if (lines[21].includes("密碼不對或無此帳號")) {
         return PTTState.WrongPassword
-    } else if (t.GetString(21).startsWith("密碼正確！")) {
+    } else if (lines[21].startsWith("密碼正確！")) {
         return PTTState.Accept
-    } else if (t.GetString(21).includes("請輸入您的密碼:")) {
+    } else if (lines[21].includes("請輸入您的密碼:")) {
         return PTTState.Password
-    } else if (t.GetString(20).includes("請輸入代號，")) {
+    } else if (lines[20].includes("請輸入代號，")) {
         return PTTState.Username
-    } else if (t.GetString(13).includes("系統過載")) {
+    } else if (lines[13].includes("系統過載")) {
         return PTTState.Overloading
-    } else if (t.GetString(4).includes("批踢踢實業坊        ◢▃██◥█◤")) {
+    } else if (lines[4].includes("批踢踢實業坊        ◢▃██◥█◤")) {
         return PTTState.Horse
-    } else if (t.GetString(3).includes("看板設定")) {
+    } else if (lines[3].includes("看板設定")) {
         return PTTState.BoardInfo
-    } else if (t.GetString(2).startsWith("------------------------------- 相關資訊一覽表 -------------------------------")) {
+    } else if (lines[2].startsWith("------------------------------- 相關資訊一覽表 -------------------------------")) {
         // 待修改
         const x = t.GetSubstring(23, 4, 26).trim()
         if (x === "按空白鍵可列出更多項目" || x === "") {
@@ -211,24 +267,40 @@ export function StateFilter(t: Terminal) {
         } else {
             return PTTState.WhereAmI
         }
-    } else if (testBoard(t.GetString(0), t.GetString(1))) {
-        flag = undefined
+    } else if (testBoard(lines[0], lines[1])) {
+        flag = false
         return PTTState.Board
-    } else if (t.GetString(0).startsWith("【分類看板】"))  {
+    } else if (lines[0].startsWith("【分類看板】")) {
         return PTTState.Category
-    } else if (testFavor(t.GetString(2), line23)) {
+    } else if (lines[0].startsWith("【休閒聊天】")) {
+        return PTTState.EasyTalk
+    } else if (lines[0].startsWith("【 站內寄信 】")) {
+        if (lines[2].startsWith("主題：")) {
+            return PTTState.SendMailSubject
+        }
+        return PTTState.SendMail
+    } else if (lines[0].startsWith("【 檔案處理 】")) {
+        return PTTState.ProcessFile
+    } else if (lines[0].startsWith("【 編輯器自動復原 】")) {
+        return PTTState.UnsavedFile
+    } else if (lines[0].startsWith("請選擇簽名檔 (1-9, 0=不加 x=隨機)")) {
+        return PTTState.Signature
+    } else if (testFavor(lines[2], lines[23])) {
         return PTTState.Favorite
-    } else if (testHot(t.GetString(2), line23)) {
+    } else if (testHot(lines[2], lines[23])) {
         return PTTState.Hot
-    } else if (t.GetString(22).startsWith("找不到這個文章代碼(AID)")) {
+    } else if (lines[22].startsWith("找不到這個文章代碼(AID)")) {
         return PTTState.AIDNotFound
-    } else if (t.GetString(1).startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
+    } else if (lines[1].startsWith("請輸入欲加入的看板名稱(按空白鍵自動搜尋)：")) {
         return PTTState.AddFavorite
-    } else if (line23.includes("任意鍵")) {
+    } else if (lines[23].includes("任意鍵")) {
+        if (/◆ 您保存信件數目 \d+ 超出上限 \d+, 請整理/.test(lines[23])) {
+            return PTTState.MailOverflow
+        }
         return PTTState.AnyKey
-    } else {
-        return PTTState.WhereAmI
     }
+
+    return PTTState.WhereAmI
 }
 
 function testBoard(line0: string, line1: string): boolean {

@@ -13,14 +13,14 @@ body {
     margin-left: auto;
     margin-right: auto;
     color: #9c4747;
-    font-family: MingLiu,monospace;
-    font-size: 1.5em;
+    font-family: MingLiu, monospace;
+    font-size: 2em;
 }
 .bbsWrapper {
     display: inline-block;
 }
 .line {
-    line-height: 1.0;
+    line-height: 1;
     padding: 0;
     margin: 0;
     border: none;
@@ -96,7 +96,7 @@ body {
 }
 
 .f37 {
-    color: #C0C0C0;
+    color: #c0c0c0;
 }
 
 .bf30 {
@@ -104,31 +104,31 @@ body {
 }
 
 .bf31 {
-    color: #FF0000;
+    color: #ff0000;
 }
 
 .bf32 {
-    color: #00FF00;
+    color: #00ff00;
 }
 
 .bf33 {
-    color: #FFFF00;
+    color: #ffff00;
 }
 
 .bf34 {
-    color: #0000FF;
+    color: #0000ff;
 }
 
 .bf35 {
-    color: #FF00FF;
+    color: #ff00ff;
 }
 
 .bf36 {
-    color: #00FFFF;
+    color: #00ffff;
 }
 
 .bf37 {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .b40 {
@@ -160,7 +160,7 @@ body {
 }
 
 .b47 {
-    background-color: #C0C0C0;
+    background-color: #c0c0c0;
 }
 
 .left_f30::before {
@@ -192,7 +192,7 @@ body {
 }
 
 .left_f37::before {
-    color: #C0C0C0;
+    color: #c0c0c0;
 }
 
 .left_bf30::before {
@@ -200,31 +200,31 @@ body {
 }
 
 .left_bf31::before {
-    color: #FF0000;
+    color: #ff0000;
 }
 
 .left_bf32::before {
-    color: #00FF00;
+    color: #00ff00;
 }
 
 .left_bf33::before {
-    color: #FFFF00;
+    color: #ffff00;
 }
 
 .left_bf34::before {
-    color: #0000FF;
+    color: #0000ff;
 }
 
 .left_bf35::before {
-    color: #FF00FF;
+    color: #ff00ff;
 }
 
 .left_bf36::before {
-    color: #00FFFF;
+    color: #00ffff;
 }
 
 .left_bf37::before {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .left_b40::before {
@@ -256,7 +256,7 @@ body {
 }
 
 .left_b47::before {
-    background-color: #C0C0C0;
+    background-color: #c0c0c0;
 }
 
 .right_f30::after {
@@ -288,7 +288,7 @@ body {
 }
 
 .right_f37::after {
-    color: #C0C0C0;
+    color: #c0c0c0;
 }
 
 .right_bf30::after {
@@ -296,31 +296,31 @@ body {
 }
 
 .right_bf31::after {
-    color: #FF0000;
+    color: #ff0000;
 }
 
 .right_bf32::after {
-    color: #00FF00;
+    color: #00ff00;
 }
 
 .right_bf33::after {
-    color: #FFFF00;
+    color: #ffff00;
 }
 
 .right_bf34::after {
-    color: #0000FF;
+    color: #0000ff;
 }
 
 .right_bf35::after {
-    color: #FF00FF;
+    color: #ff00ff;
 }
 
 .right_bf36::after {
-    color: #00FFFF;
+    color: #00ffff;
 }
 
 .right_bf37::after {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .right_b40::after {
@@ -352,5 +352,5 @@ body {
 }
 
 .right_b47::after {
-    background-color: #C0C0C0;
+    background-color: #c0c0c0;
 }

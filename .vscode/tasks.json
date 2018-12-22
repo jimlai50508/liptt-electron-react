@@ -2,26 +2,56 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "取得相依性套件(nodejs)",
-            "group": "build",
+            "label": "yarn",
             "type": "shell",
+            "group": "none",
+            "isBackground": true,
             "command": "yarn",
-            "args": [
-                "install"
-            ],
-            "problemMatcher": "$eslint-stylish"
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "clear dist(electron)",
-            "group": "build",
+            "group": "none",
             "type": "shell",
             "command": "rm -rf dist/main",
             "windows": {
                 "command": "if exist \"dist\\main\\\" RD /s /q .\\dist\\main\\"
             },
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
-            "label": "建置(electron prod)",
+            "label": "建置(electron production)",
+            "group": "none",
+            "type": "shell",
+            "command": "node_modules/.bin/tsc",
+            "windows": {
+                "command": "node_modules\\.bin\\tsc.cmd"
+            },
+            "args": [
+                "--project",
+                "main",
+                "--outDir",
+                "dist/main",
+                "--sourceMap",
+                "false"
+            ],
+            "dependsOn": ["clear dist(electron)"],
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "建置(electron development)",
             "group": "build",
             "type": "shell",
             "command": "node_modules/.bin/tsc",
@@ -29,63 +59,42 @@
                 "command": "node_modules\\.bin\\tsc.cmd"
             },
             "args": [
-                "--project", "main/",
-                "--outDir", "dist/main/",
-                "--sourceMap", "false"
+                "--project",
+                "main",
+                "--outDir",
+                "dist/main",
+                "--sourceMap",
+                "true"
             ],
-            "dependsOn": [
-                "clear dist(electron)"
-            ],
-            "problemMatcher": "$tsc"
-        },
-        {
-            "label": "建置(electron dev)",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "type": "shell",
-            "command": "node_modules/.bin/tsc",
-            "windows": {
-                "command": "node_modules\\.bin\\tsc.cmd"
-            },
-            "args": [
-                "--project", "main/",
-                "--outDir", "dist/main/",
-                "--sourceMap", "true"
-            ],
-            "dependsOn": [
-                "clear dist(electron)"
-            ],
-            "problemMatcher": "$tsc"
+            "dependsOn": ["clear dist(electron)"],
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "建置(webpack development)",
             "type": "shell",
             "group": "build",
             "command": "yarn",
-            "args": [
-                "run",
-                "webpack-development"
-            ],
-            "dependsOn":[
-                "建置(webpack config)",
-            ],
-            "problemMatcher": "$awesometsc"
+            "args": ["run", "webpack-development"],
+            "dependsOn": ["建置(webpack configuration)"],
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "建置(webpack production)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "yarn",
-            "args": [
-                "run",
-                "webpack-production"
-            ],
-            "dependsOn":[
-                "建置(webpack config)",
-            ],
-            "problemMatcher": "$awesometsc"
+            "args": ["run", "webpack-production"],
+            "dependsOn": ["建置(webpack configuration)"],
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "監看(webpack development)",
@@ -93,94 +102,72 @@
             "isBackground": true,
             "group": "test",
             "command": "yarn",
-            "args": [
-                "run",
-                "webpack-watch"
-            ],
-            "problemMatcher": "$awesometsc"
+            "args": ["run", "webpack-watch"],
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
-            "label": "建置(webpack config)",
+            "label": "建置(webpack configuration)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "node_modules/.bin/tsc",
             "windows": {
                 "command": "node_modules\\.bin\\tsc.cmd"
             },
-            "args": [
-                "--project",
-                ".webpack/",
-                "--outDir",
-                ".webpack/"
-            ],
-            "problemMatcher": "$tsc"
-        },
-        {
-            "label": "監看(webpack config)",
-            "type": "shell",
-            "group": "build",
-            "isBackground": true,
-            "command": "node_modules/.bin/tsc",
-            "windows": {
-                "command": "node_modules\\.bin\\tsc.cmd"
-            },
-            "args": [
-                "--project",
-                ".webpack/",
-                "--watch",
-                "--outDir",
-                ".webpack/",
-                "--diagnostics",
-                "false"
-            ],
-            "problemMatcher": "$tsc"
+            "args": ["--project", ".webpack", "--outDir", ".webpack"],
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "分析(webpack)",
             "type": "shell",
             "group": "test",
             "command": "yarn",
-            "args": [
-                "run",
-                "webpack-analyzer"
-            ],
-            "problemMatcher": "$awesometsc"
+            "args": ["run", "webpack-analyzer"],
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         },
         {
-            "label": "分析(Typescript)",
+            "label": "分析(typescript)",
             "type": "shell",
             "group": "test",
             "command": "node_modules/.bin/tslint --config tslint.json 'main/**/*.ts' 'renderer/**/*.{ts,tsx}' '.webpack/**/*.ts'",
             "windows": {
                 "command": "node_modules\\.bin\\tslint.cmd --config tslint.json 'main\\**\\*.ts' 'renderer\\**\\*.{ts,tsx}' '.webpack\\**\\*.ts'"
             },
-            "problemMatcher": "$tsc"
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "Release 安裝包(實驗中)",
             "type": "shell",
-            "group": "build",
+            "group": "none",
             "command": "electron-builder",
             "linux": {
-                "args": [
-                    "--linux"
-                ]
+                "args": ["--linux"]
             },
             "osx": {
-                "args": [
-                    "--mac"
-                ]
+                "args": ["--mac"]
             },
             "windows": {
-                "args": [
-                    "--win",
-                ]
+                "args": ["--win"]
             },
             "dependsOn": [
                 "建置(webpack production)",
-                "建置(electron prod)",
+                "建置(electron production)"
             ],
-            "problemMatcher": "$eslint-stylish"
+            "problemMatcher": [],
+            "presentation": {
+                "clear": true
+            }
         }
     ]
 }

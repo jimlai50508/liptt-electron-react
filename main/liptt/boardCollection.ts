@@ -2,7 +2,6 @@ import { ArticleAbstract } from "../model"
 
 /** 蒐集看板頁面資訊 */
 export class BoardCache {
-
     public name: string
     public popularity: string
     /** key: 文章編號 */
@@ -62,7 +61,7 @@ export class BoardCache {
             }
             for (let item = it.next(); item.value && n > 0; item = it.next()) {
                 const a = item.value[1]
-                result.push({...a})
+                result.push({ ...a })
                 n = n - 1
             }
         }
@@ -79,7 +78,7 @@ export class BoardCache {
         }
         for (let item = iterator.next(); item.value && n > 0; item = iterator.next()) {
             const a = item.value[1]
-            result.push({...a})
+            result.push({ ...a })
             n = n - 1
         }
 

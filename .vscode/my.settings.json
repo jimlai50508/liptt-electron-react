@@ -13,7 +13,7 @@
         ".webpack": "webpack"
     },
     "material-icon-theme.files.associations": {
-        "tsconfig.base.json": "typescript",        
+        "tsconfig.base.json": "typescript",
         "tsconfig.json": "typescript",
         "webpack.analyzer.ts": "Webpack",
         "webpack.analyzer.js": "Webpack",
