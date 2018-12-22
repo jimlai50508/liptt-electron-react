@@ -9,10 +9,9 @@
     "types": [],
     "paths": {
       "renderer/*": ["./renderer/*"],
-      "assets/*": ["./renderer/assets/*"],
-      "components/*": ["./renderer/App/components/*"],
+      "components/*": ["./renderer/components/*"],
+      "stores": ["./renderer/stores"],
       "model": ["./main/model"],
-      "model/*": ["./main/model/*"],
       "encoding": ["./main/encoding"]
     },
     "baseUrl": "./"

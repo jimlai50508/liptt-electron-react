@@ -5,7 +5,7 @@ export interface ISocket {
     socket?: SocketStore
 }
 
-export class AppStore {
+export default class AppStore {
     public socket: SocketStore
 
     constructor() {

@@ -1,10 +1,10 @@
 import React, { Component } from "react"
 import { HashRouter } from "react-router-dom"
 import { Switch, Route } from "react-router-dom"
-import { MainPage, LoginPage } from "./pages"
+import { MainPage, LoginPage } from "../pages"
 import { Provider, inject } from "mobx-react"
 import { PromiseIpcRenderer } from "model"
-import { AppStore } from "components/AppStore"
+import AppStore from "stores"
 import MobXDevTools from "mobx-react-devtools"
 import Controller from "components/Controller"
 

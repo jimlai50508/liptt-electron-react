@@ -3,7 +3,7 @@ import { ipcRenderer, EventEmitter } from "electron"
 import { SocketState } from "model"
 import { action } from "mobx"
 import { observer, inject } from "mobx-react"
-import { ISocket } from "./AppStore"
+import { ISocket } from "stores"
 
 interface ComponentProps extends ISocket {}
 

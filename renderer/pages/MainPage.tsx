@@ -17,7 +17,7 @@ import { MailPage } from "./MailPage"
 
 import { reaction, when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
-import { ISocket } from "components/AppStore"
+import { ISocket } from "stores"
 
 interface ComponentProps extends ISocket {}
 

@@ -1,4 +1,4 @@
-# 傳統 BBS 相關
+# 傳統 BBS terminal 相關
 
 ### VT100
 
