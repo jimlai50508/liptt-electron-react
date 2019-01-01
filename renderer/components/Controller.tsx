@@ -3,13 +3,13 @@ import { ipcRenderer, EventEmitter } from "electron"
 import { SocketState } from "model"
 import { action } from "mobx"
 import { observer, inject } from "mobx-react"
-import { ISocket } from "stores"
+import AppStore, { IUserStore } from "stores"
 
-interface ComponentProps extends ISocket {}
+interface ComponentProps extends IUserStore {}
 
 interface ComponentState {}
 
-@inject("socket")
+@inject(AppStore.User)
 @observer
 export default class extends Component<ComponentProps, ComponentState> {
     public componentDidMount() {
@@ -31,9 +31,6 @@ export default class extends Component<ComponentProps, ComponentState> {
         ipcRenderer.on("console-clear", (_e: EventEmitter) => {
             console.clear()
         })
-        ipcRenderer.on("/socket", (_e: EventEmitter, state: SocketState) => {
-            this.setSocketState(state)
-        })
         ipcRenderer.on("/notification", (_: EventEmitter, options: NotificationOptions) => {
             if (!("Notification" in window)) {
                 alert("你這個瀏覽器不支援 Notification")
@@ -47,11 +44,14 @@ export default class extends Component<ComponentProps, ComponentState> {
                 })
             }
         })
+        ipcRenderer.on("/socket", (_e: EventEmitter, state: SocketState) => {
+            this.setSocketState(state)
+        })
     }
 
     @action
     private setSocketState(s: SocketState) {
-        this.props.socket.setSocketState(s)
+        this.props.user.setSocketState(s)
     }
 
     public render(): JSX.Element {

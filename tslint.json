@@ -19,6 +19,7 @@
       "dev",
       ["assets", "renderer", "components", "model", "encoding", "stores"]
     ],
+    "semicolon": false,
     "no-console": false,
     "no-var-requires": false,
     "no-duplicate-imports": false,

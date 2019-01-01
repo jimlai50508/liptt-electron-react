@@ -17,9 +17,9 @@ import { MailPage } from "./MailPage"
 
 import { reaction, when, IReactionDisposer } from "mobx"
 import { observer, inject } from "mobx-react"
-import { ISocket } from "stores"
+import AppStore, { IUserStore } from "stores"
 
-interface ComponentProps extends ISocket {}
+interface ComponentProps extends IUserStore {}
 
 interface ComponentState {
     logout: boolean
@@ -27,7 +27,7 @@ interface ComponentState {
     collapsed: boolean
 }
 
-@inject("socket")
+@inject(AppStore.User)
 @observer
 export class MainPage extends Component<ComponentProps, ComponentState> {
     private reactionDisposer: IReactionDisposer
@@ -46,11 +46,13 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
     }
 
     private onLogout = (e: MouseEvent<HTMLElement>) => {
-        const gql = `mutation { logout }`
         this.isLogout = false
-        PromiseIpcRenderer.send(ApiRoute.GraphQL, gql).then(result => {
-            this.setState((prev, _) => ({ ...prev, logout: true }))
-        })
+        this.props.user.logout()
+        // const gql = `mutation { logout }`
+        // PromiseIpcRenderer.send(ApiRoute.GraphQL, gql).then(result => {
+        //     this.setState((prev, _) => ({ ...prev, logout: true }))
+        // })
+
         // PromiseIpcRenderer.send(ApiRoute.logout)
         // this.setState((prev, _) => ({...prev, logout: true}))
     }
@@ -88,7 +90,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
 
     public componentDidMount() {
         this.reactionDisposer = reaction(
-            () => this.props.socket.socketState,
+            () => this.props.user.socketState,
             state => {
                 if (state === SocketState.Closed) {
                     if (this.isLogout) {
@@ -138,7 +140,7 @@ export class MainPage extends Component<ComponentProps, ComponentState> {
     }
 
     public render() {
-        if (this.state.logout) {
+        if (!this.props.user.logined) {
             return <Redirect to="/" />
         }
 

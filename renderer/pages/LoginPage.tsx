@@ -4,16 +4,16 @@ import { Button, Icon, Input, Row, Col, Layout, Form, notification } from "antd"
 import * as style from "./LoginPage.scss"
 import { PromiseIpcRenderer, User, PTTState, StateString, ApiRoute } from "model"
 import { GraphQLError } from "graphql"
+import { inject, observer } from "mobx-react"
+import AppStore, { IUserStore } from "stores"
 
-interface ComponentProps {}
+interface IProps extends IUserStore {}
 
-interface ComponentState {
+interface IState {
     warning: boolean
-    logined: boolean
     lock: boolean
     username: string
     password: string
-    loading: boolean
 }
 
 interface GraphQLQuery {
@@ -25,7 +25,9 @@ interface LoginResult {
     errors?: GraphQLError
 }
 
-export class LoginPage extends Component<ComponentProps, ComponentState> {
+@inject(AppStore.User)
+@observer
+export class LoginPage extends Component<IProps, IState> {
     private userNameInput: Input
 
     private onChangeUserName = (e: ChangeEvent<HTMLInputElement>) => {
@@ -48,11 +50,9 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
         })
     }
 
-    constructor(prop: ComponentProps) {
+    constructor(prop: IProps) {
         super(prop)
         this.state = {
-            logined: false,
-            loading: false,
             lock: false,
             username: "",
             password: "",
@@ -67,113 +67,82 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
 
     private handleSubmit = (e: React.FormEvent<HTMLElement>) => {
         e.preventDefault()
-        if (this.state.loading || this.state.lock) {
+        if (this.props.user.logging) {
             return
         }
-        const user = {
-            username: this.state.username,
-            password: this.state.password,
+        if (this.state.lock) {
+            return
         }
+        this.props.user.login(this.state.username, this.state.password)
 
-        const gql = `
-        # query {
-        #    me { username }
-        # }
-        mutation LoginMutation($user: UserInput!) {
-            login(user: $user)
-        }
-        `
-        const args = {
-            user,
-        }
-        PromiseIpcRenderer.send<LoginResult>(ApiRoute.GraphQL, gql, args).then(result => {
-            if (result.errors) {
-                console.error(result.errors)
-                return
-            }
-            const s = result.data.login
-            if (s === "Ok") {
-                this.setState((prev, _) => ({ ...prev, loading: false, logined: true }))
-            } else {
-                this.setState((prev, _) => ({ ...prev, loading: false, logined: false }))
-                switch (s) {
-                    case "WebSocketFailed":
-                        notification.config({ placement: "topRight" })
-                        setTimeout(() => {
-                            notification.error({ message: "", description: "WebSocket連線失敗" })
-                        }, 10)
-                        break
-                    case "WrongPassword":
-                        notification.config({ placement: "topRight" })
-                        setTimeout(() => {
-                            notification.error({ message: "", description: "密碼錯誤嗎？" })
-                        }, 10)
-                        break
-                    case "Overloading":
-                        notification.config({ placement: "topRight" })
-                        setTimeout(() => {
-                            notification.warn({ message: "", description: "系統過載..." })
-                        }, 10)
-                        break
-                    case "HeavyLogin":
-                        notification.config({ placement: "topRight" })
-                        this.setState((prev, props) => ({ lock: true }))
-                        setTimeout(() => {
-                            this.setState((prev, props) => ({ lock: false }))
-                        }, 3000)
-                        setTimeout(() => {
-                            notification.warn({ message: "", description: "登入太頻繁" })
-                        }, 10)
-                        break
-                    default:
-                        notification.config({ placement: "topRight" })
-                        setTimeout(() => {
-                            notification.error({ message: "", description: "Where" })
-                        }, 10)
-                        break
-                }
-            }
-        })
+        // const user = {
+        //     username: this.state.username,
+        //     password: this.state.password,
+        // }
 
-        // PromiseIpcRenderer.send<PTTState>(ApiRoute.login, user)
-        // .then((s: PTTState) => {
-        //     if (s === PTTState.MainPage) {
-        //         this.setState((prev, _) => ({...prev, loading: false, logined: true}))
+        // const gql = `
+        // # query {
+        // #    me { username }
+        // # }
+        // mutation LoginMutation($user: UserInput!) {
+        //     login(user: $user)
+        // }
+        // `
+        // const args = {
+        //     user,
+        // }
+        // PromiseIpcRenderer.send<LoginResult>(ApiRoute.GraphQL, gql, args).then(result => {
+        //     if (result.errors) {
+        //         console.error(result.errors)
+        //         return
+        //     }
+        //     const s = result.data.login
+        //     if (s === "Ok") {
+        //         this.setState((prev, _) => ({ ...prev, loading: false, logined: true }))
         //     } else {
-        //         this.setState((prev, _) => ({...prev, loading: false, logined: false}))
+        //         this.setState((prev, _) => ({ ...prev, loading: false, logined: false }))
         //         switch (s) {
-        //         case PTTState.WebSocketFailed:
-        //             notification.config({placement: "topRight"})
-        //             setTimeout(() => {
-        //                 notification.error({message: "", description: "連線失敗"})
-        //             }, 10)
-        //             break
-        //         case PTTState.Overloading:
-        //             notification.config({placement: "topRight"})
-        //             setTimeout(() => {
-        //                 notification.warn({message: "", description: "系統過載..."})
-        //             }, 10)
-        //             break
-        //         case PTTState.HeavyLogin:
-        //             notification.config({placement: "topRight"})
-        //             setTimeout(() => {
-        //                 notification.warn({message: "", description: "登入太多次了"})
-        //             }, 10)
-        //             break
-        //         default:
-        //             notification.config({placement: "topRight"})
-        //             setTimeout(() => {
-        //                 notification.error({message: "", description: StateString(s)})
-        //             }, 10)
-        //             break
+        //             case "WebSocketFailed":
+        //                 notification.config({ placement: "topRight" })
+        //                 setTimeout(() => {
+        //                     notification.error({ message: "", description: "WebSocket連線失敗" })
+        //                 }, 10)
+        //                 break
+        //             case "WrongPassword":
+        //                 notification.config({ placement: "topRight" })
+        //                 setTimeout(() => {
+        //                     notification.error({ message: "", description: "密碼錯誤嗎？" })
+        //                 }, 10)
+        //                 break
+        //             case "Overloading":
+        //                 notification.config({ placement: "topRight" })
+        //                 setTimeout(() => {
+        //                     notification.warn({ message: "", description: "系統過載..." })
+        //                 }, 10)
+        //                 break
+        //             case "HeavyLogin":
+        //                 notification.config({ placement: "topRight" })
+        //                 this.setState((prev, props) => ({ lock: true }))
+        //                 setTimeout(() => {
+        //                     this.setState((prev, props) => ({ lock: false }))
+        //                 }, 3000)
+        //                 setTimeout(() => {
+        //                     notification.warn({ message: "", description: "登入太頻繁" })
+        //                 }, 10)
+        //                 break
+        //             default:
+        //                 notification.config({ placement: "topRight" })
+        //                 setTimeout(() => {
+        //                     notification.error({ message: "", description: "Where" })
+        //                 }, 10)
+        //                 break
         //         }
         //     }
         // })
-        this.setState((prev, _) => ({ ...prev, loading: true }))
     }
 
     public render() {
-        if (this.state.logined) {
+        if (this.props.user.logined) {
             return <Redirect to="/Main" />
         }
 
@@ -189,6 +158,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                         prefix={<Icon type="user" style={{ color: "rgba(0,0,0,.25)" }} />}
                         // suffix={suffix}
                         value={username}
+                        size="large"
                         onChange={this.onChangeUserName}
                         className={style.input}
                     />
@@ -199,6 +169,7 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                         prefix={<Icon type="lock" style={{ color: "rgba(0,0,0,.25)" }} />}
                         type="password"
                         value={password}
+                        size="large"
                         onChange={this.onChangePassword}
                         className={style.input}
                     />
@@ -208,8 +179,9 @@ export class LoginPage extends Component<ComponentProps, ComponentState> {
                         type="primary"
                         htmlType={"submit"}
                         block
+                        size="large"
                         disabled={this.state.lock}
-                        loading={this.state.loading}
+                        loading={this.props.user.logging}
                     >
                         {"登入"}
                     </Button>

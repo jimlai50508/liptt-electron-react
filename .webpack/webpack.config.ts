@@ -56,17 +56,8 @@ const conf: Configuration = {
                             ]),
                         ],
                     }),
-                    // useBabel: false,
-                    // babelOptions: {
-                    //     babelrc: false, /* Important line */
-                    //     presets: [
-                    //         ["@babel/preset-env", { "targets": "last 2 versions, ie 11", "modules": false }]
-                    //     ]
-                    // },
-                    // "babelCore": "@babel/core",
                 },
                 exclude: /node_modules/,
-                // include: [path.resolve(__dirname, "../renderer")],
             },
             {
                 test: /\.(png|jp(e?)g|gif|svg)$/,
